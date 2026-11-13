@@ -1,13 +1,15 @@
 name: snapshot
 on:
   schedule:
-    - cron: "20 * * * *"
+    - cron: "7,27,47 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
+concurrency: snapshot
 jobs:
   snap:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/snap.py
@@ -15,4 +17,8 @@ jobs:
           git config user.name "motion-radar-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data
-          git diff --cached --quiet || (git commit -m "snapshot" && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m "snapshot"
+            git pull --rebase
+            git push
+          fi
