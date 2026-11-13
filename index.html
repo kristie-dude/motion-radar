@@ -43,6 +43,34 @@ td.num,th.num{text-align:right}
 #tip{position:fixed;pointer-events:none;background:#000;border:1px solid var(--cyan);padding:8px 10px;font-size:13px;line-height:1.45;display:none;z-index:9}
 footer{color:var(--mut);font-size:12px;margin-top:28px;line-height:1.6}
 footer a{color:var(--cyan)}
+.nav{display:flex;gap:0;margin-top:22px;border-bottom:1px solid var(--line)}
+.nav a{color:var(--mut);text-decoration:none;font-weight:800;font-size:15px;padding:10px 18px;border-bottom:3px solid transparent;margin-bottom:-1px;letter-spacing:.5px}
+.nav a.on{color:#fff;border-bottom-color:var(--pink)}
+.clk{cursor:pointer}.clk:hover{color:var(--cyan)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.ctrl .lbl{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:2px;margin:0 4px 0 10px}
+.ctrl .lbl:first-child{margin-left:0}
+.ctrl button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 12px;font:700 13px Archivo,sans-serif;cursor:pointer}
+.ctrl button.on{background:var(--cyan);border-color:var(--cyan);color:var(--bg)}
+.ctrl button:disabled{opacity:.35;cursor:not-allowed}
+.ctrl label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);padding:5px 9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
+.ctrl label input[type=number]{width:44px;background:var(--bg);border:1px solid var(--line);color:#fff;font:600 13px Archivo,sans-serif;padding:2px 4px}
+.ctrl label input[type=checkbox]{accent-color:#ff3877}
+.pick{position:relative;flex:1;min-width:240px;max-width:380px}
+.pick input{width:100%;background:var(--bg);border:1px solid var(--line);color:#fff;font:600 15px Archivo,sans-serif;padding:10px 12px}
+.pick input:focus{outline:none;border-color:var(--cyan)}
+#sug{position:absolute;left:0;right:0;top:100%;background:#000;border:1px solid var(--cyan);z-index:5;display:none;max-height:300px;overflow:auto}
+#sug div{padding:8px 12px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between}
+#sug div:hover,#sug div.hl{background:#141b38}
+#sug span{color:var(--mut)}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);padding:6px 10px;font-weight:700;font-size:14px}
+.chip i{width:10px;height:10px;display:inline-block}
+.chip b{cursor:pointer;color:var(--mut);font-weight:900}
+.chip b:hover{color:var(--pink)}
+#legend{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;min-height:22px;margin-bottom:8px;color:var(--mut)}
+#legend b{color:#fff}
+#tv{height:540px;position:relative}
+@media(max-width:900px){#tv{height:420px}}
 </style></head><body>
 <div class="wrap">
 <header>
@@ -51,6 +79,9 @@ footer a{color:var(--cyan)}
  <div class="meta" id="meta">loading…</div>
 </header>
 
+<nav class="nav"><a href="#radar" data-v="radar" class="on">Radar</a><a href="#charts" data-v="charts">Charts</a></nav>
+
+<section id="v-radar">
 <div class="tabs"><span class="lbl">Move over</span>
  <button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">all saved</button></div>
 
@@ -64,16 +95,40 @@ footer a{color:var(--cyan)}
 </div>
 
 <div class="card" style="margin-top:16px"><h2>All creators</h2><div style="overflow-x:auto"><table id="tbl"></table></div>
- <div class="how"><b>How to read it.</b> Motion gives every creator 1 to 8 stars based on the last 14 days, and lineups have a star cap. Stars and scores aren't public, so this uses rank instead. <b>Avg rank</b> is the creator's average position over the saved history (up to 14 days). A high number there means a cold recent past, which likely means fewer stars. <b>Heat</b> is how much better their rank is now than that average. Cheap &amp; rising = bottom half on avg rank, and up 2 or more spots. It's an estimate, not official star data.</div>
+ <div class="how"><b>How to read it.</b> Motion gives every creator 1 to 8 stars based on the last 14 days, and lineups have a star cap. Stars and scores aren't public, so this uses rank instead. <b>Avg rank</b> is the creator's average position over the saved history (up to 14 days). A high number there means a cold recent past, which likely means fewer stars. <b>Heat</b> is how much better their rank is now than that average. Cheap &amp; rising = bottom half on avg rank, and up 2 or more spots. It's an estimate, not official star data. Click any name to open its chart.</div>
 </div>
+</section>
 
-<footer>Fan-made for Mogathon. Not affiliated with Motion. Data: <a href="https://leaderboard.motion.game" target="_blank" rel="noopener">leaderboard.motion.game</a>, saved every 4 hours since 13 Nov 2026 in <a href="https://github.com/kristie-dude/motion-radar" target="_blank" rel="noopener">this repo</a>. The leaderboard's own change number is the move over the last 4 hours.</footer>
+<section id="v-charts" hidden>
+<div class="card" style="margin-top:20px">
+ <div class="ctrl">
+  <div class="pick"><input id="q" placeholder="Add a creator, type a name…" autocomplete="off"><div id="sug"></div></div>
+  <button id="addTop">+ Top climbers</button><button id="addCheap">+ Cheap &amp; rising</button><button id="clr">Clear</button>
+ </div>
+ <div class="ctrl" id="chips"></div>
+ <div class="ctrl">
+  <span class="lbl">Chart</span><button data-ct="line" class="on">Line</button><button data-ct="candle">Candles</button>
+  <span class="lbl">Candle</span><button data-cs="12">12h</button><button data-cs="24" class="on">1D</button>
+  <span class="lbl">Indicators</span>
+  <label><input type="checkbox" id="iSMA" checked> SMA <input type="number" id="pSMA" value="6" min="2" max="90"></label>
+  <label><input type="checkbox" id="iEMA"> EMA <input type="number" id="pEMA" value="12" min="2" max="90"></label>
+  <label><input type="checkbox" id="iBB"> Bollinger <input type="number" id="pBB" value="12" min="3" max="90"></label>
+  <label><input type="checkbox" id="iMOM" checked> Momentum</label>
+ </div>
+ <div id="legend"></div>
+ <div id="tv"></div>
+ <div class="how"><b>How to read it.</b> The line is the creator's rank on the Motion leaderboard over time, with <b>#1 at the top</b>, so up means climbing. One point every 4 hours. Indicators count in points, so SMA 6 is a 24-hour average. <b>Candles</b> group a period into open, close, best and worst rank; green means they climbed over that candle. <b>Momentum</b> shows spots gained or lost at each update for the first creator you picked. Bollinger and momentum follow the first creator; SMA and EMA are drawn for everyone. History starts on 13 Nov 2026, when saving began.</div>
+</div>
+</section>
+
+<footer>Fan-made for Mogathon. Not affiliated with Motion. Data: <a href="https://leaderboard.motion.game" target="_blank" rel="noopener">leaderboard.motion.game</a>, saved every 4 hours since 13 Nov 2026 in <a href="https://github.com/kristie-dude/motion-radar" target="_blank" rel="noopener">this repo</a>. The leaderboard's own change number is the move over the last 4 hours. Charts by <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a>.</footer>
 </div>
 <div id="tip"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.3.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 const H = 3600e3;
-let SNAPS = [], WIN = 24, SORT = {k: 'rank', d: 1};
+let SNAPS = [], WIN = 24, SORT = {k: 'rank', d: 1}, DATA = null;
 
 function cls(v){ return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
 function fmt(v){ return v > 0 ? '▲' + v : v < 0 ? '▼' + (-v) : '0'; }
@@ -90,6 +145,7 @@ async function load(){
   } catch(e) {}
   SNAPS = h.snapshots.sort((a, b) => a.asOf < b.asOf ? -1 : 1);
   render();
+  route();
 }
 
 function build(){
@@ -116,12 +172,12 @@ function build(){
     return {id, name, rank: pos, ch4: delta, chw: base.r - pos, avg, heat: avg - pos, isNew, p, cheap: avg > N / 2};
   });
   const first = Math.min(...Object.values(pts).map(p => Math.min(...p.map(q => q.t))));
-  return {rows: out, N, tNow, first, live: !!last.live};
+  return {rows: out, N, tNow, first, live: !!last.live, pts, names};
 }
 
 function list(el, rows){
   document.getElementById(el).innerHTML = rows.length ? rows.map(r =>
-    '<div class="row"><span class="r">#' + r.rank + '</span><span class="n">' + esc(r.name) + '</span><span class="c ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></div>').join('')
+    '<div class="row"><span class="r">#' + r.rank + '</span><span class="n clk" data-open="' + r.id + '">' + esc(r.name) + '</span><span class="c ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></div>').join('')
     : '<div class="empty">Nobody right now.</div>';
 }
 
@@ -157,7 +213,7 @@ function chart(rows, N){
 
 function render(){
   if (!SNAPS.length){ document.getElementById('meta').textContent = 'No data yet.'; return; }
-  const {rows, N, tNow, first, live} = build();
+  DATA = build(); const {rows, N, tNow, first, live} = DATA;
   const hrs = Math.round((tNow - first) / H);
   document.getElementById('meta').innerHTML = 'Last update <b>' + new Date(tNow).toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit'}) + '</b>' + (live ? ' (live)' : '') +
     '<br><b>' + SNAPS.length + '</b> snapshots · <b>' + hrs + 'h</b> of history · <b>' + N + '</b> creators';
@@ -168,7 +224,7 @@ function render(){
   const cols = [['rank','#',1],['name','Creator',0],['ch4','4h',1],['chw', WIN ? WIN + 'h' : 'All', 1],['avg','Avg rank',1],['heat','Heat',1],['p','Trend',0]];
   const sorted = rows.slice().sort((a, b) => { const k = SORT.k; const va = k === 'name' ? a.name.toLowerCase() : a[k], vb = k === 'name' ? b.name.toLowerCase() : b[k]; return (va < vb ? -1 : va > vb ? 1 : 0) * SORT.d; });
   let t = '<tr>' + cols.map(c => '<th class="' + (c[2] ? 'num' : '') + '" data-k="' + c[0] + '">' + c[1] + (SORT.k === c[0] ? (SORT.d > 0 ? ' ↑' : ' ↓') : '') + '</th>').join('') + '</tr>';
-  for (const r of sorted) t += '<tr><td class="num" style="color:#00d8f4;font-weight:700">' + r.rank + '</td><td>' + esc(r.name) + (r.cheap && r.chw >= 2 ? '<span class="tag">CHEAP & RISING</span>' : '') + '</td><td class="num ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</td><td class="num ' + cls(r.chw) + '">' + fmt(r.chw) + '</td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num ' + cls(Math.round(r.heat)) + '">' + (r.heat > 0 ? '+' : '') + r.heat.toFixed(1) + '</td><td>' + spark(r.p, N) + '</td></tr>';
+  for (const r of sorted) t += '<tr><td class="num" style="color:#00d8f4;font-weight:700">' + r.rank + '</td><td><span class="clk" data-open="' + r.id + '">' + esc(r.name) + '</span>' + (r.cheap && r.chw >= 2 ? '<span class="tag">CHEAP & RISING</span>' : '') + '</td><td class="num ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</td><td class="num ' + cls(r.chw) + '">' + fmt(r.chw) + '</td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num ' + cls(Math.round(r.heat)) + '">' + (r.heat > 0 ? '+' : '') + r.heat.toFixed(1) + '</td><td>' + spark(r.p, N) + '</td></tr>';
   const tbl = document.getElementById('tbl'); tbl.innerHTML = t;
   tbl.querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'p') return; SORT = {k, d: SORT.k === k ? -SORT.d : (k === 'name' || k === 'rank' || k === 'avg' ? 1 : -1)}; render(); });
   const tip = document.getElementById('tip'), byId = Object.fromEntries(rows.map(r => [r.id, r]));
@@ -176,12 +232,135 @@ function render(){
     c.onmousemove = e => { const r = byId[c.dataset.id]; tip.style.display = 'block'; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
       tip.innerHTML = '<b>' + esc(r.name) + '</b><br>Rank #' + r.rank + ' · move ' + fmt(r.chw) + '<br>Avg rank ' + r.avg.toFixed(1); };
     c.onmouseleave = () => tip.style.display = 'none';
+    c.onclick = () => { tip.style.display = 'none'; openChart([c.dataset.id]); };
   });
 }
 
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on')); b.classList.add('on'); WIN = +b.dataset.w; render();
 });
+
+/* ---------- Charts tab ---------- */
+const COLORS = ['#00d8f4', '#ff3877', '#f5c542', '#7bc33b', '#b388ff', '#ff9f43'];
+let SEL = [], CT = 'line', CS = 24, TV = null, MAIN = [];
+
+function sma(d, n){ const o = []; let s = 0; for (let i = 0; i < d.length; i++){ s += d[i].value; if (i >= n) s -= d[i - n].value; if (i >= n - 1) o.push({time: d[i].time, value: s / n}); } return o; }
+function ema(d, n){ const o = [], k = 2 / (n + 1); let e = null; for (const p of d){ e = e === null ? p.value : p.value * k + e * (1 - k); o.push({time: p.time, value: e}); } return o; }
+function bands(d, n, m){ const u = [], l = []; for (let i = n - 1; i < d.length; i++){ const w = d.slice(i - n + 1, i + 1).map(p => p.value); const a = w.reduce((x, y) => x + y, 0) / n; const sd = Math.sqrt(w.reduce((x, y) => x + (y - a) * (y - a), 0) / n); u.push({time: d[i].time, value: a + m * sd}); l.push({time: d[i].time, value: a - m * sd}); } return [u, l]; }
+
+function lineData(id){
+  const seen = new Set(), o = [];
+  for (const q of DATA.pts[id] || []){ const t = Math.floor(q.t / 1000); if (!seen.has(t)){ seen.add(t); o.push({time: t, value: q.r}); } }
+  return o.sort((a, b) => a.time - b.time);
+}
+function candleData(d, hrs){
+  const o = [], size = hrs * 3600; let cur = null;
+  for (const p of d){ const b = Math.floor(p.time / size) * size;
+    if (!cur || cur.time !== b){ cur = {time: b, open: p.value, high: p.value, low: p.value, close: p.value}; o.push(cur); }
+    else { cur.close = p.value; cur.high = Math.max(cur.high, p.value); cur.low = Math.min(cur.low, p.value); } }
+  return o;
+}
+const rankFmt = {type: 'custom', minMove: 1, formatter: v => v < 0.5 ? '' : '#' + Math.round(v)};
+
+function drawChart(){
+  const el = document.getElementById('tv'), lg = document.getElementById('legend');
+  if (TV){ TV.remove(); TV = null; } MAIN = [];
+  el.innerHTML = ''; lg.innerHTML = '';
+  document.querySelector('[data-ct="candle"]').disabled = SEL.length !== 1;
+  if (SEL.length !== 1) CT = 'line';
+  document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === CT));
+  if (!window.LightweightCharts){ el.innerHTML = '<div class="empty" style="padding:60px;text-align:center">Chart library didn\'t load. Check your connection and refresh.</div>'; return; }
+  if (!DATA || !SEL.length){ el.innerHTML = '<div class="empty" style="padding:60px;text-align:center">Pick a creator above to see their rank history.<br>Or click any name on the Radar tab.</div>'; return; }
+  const LC = window.LightweightCharts;
+  TV = LC.createChart(el, {autoSize: true,
+    layout: {background: {type: 'solid', color: '#0b1024'}, textColor: '#90a1b9', fontFamily: 'Archivo, sans-serif', panes: {separatorColor: '#1d2546'}},
+    grid: {vertLines: {color: '#141b38'}, horzLines: {color: '#141b38'}},
+    rightPriceScale: {invertScale: true, borderColor: '#1d2546'},
+    timeScale: {timeVisible: true, secondsVisible: false, borderColor: '#1d2546'},
+    crosshair: {mode: 0}});
+  const ind = id => document.getElementById(id).checked, per = id => Math.max(2, +document.getElementById(id).value || 2);
+  SEL.forEach((id, i) => {
+    const col = COLORS[i % COLORS.length], name = DATA.names[id];
+    let d = lineData(id), s;
+    if (CT === 'candle'){
+      const c = candleData(d, CS);
+      s = TV.addSeries(LC.CandlestickSeries, {upColor: '#e0365a', downColor: '#7bc33b', borderUpColor: '#e0365a', borderDownColor: '#7bc33b', wickUpColor: '#e0365a', wickDownColor: '#7bc33b', priceFormat: rankFmt}, 0);
+      s.setData(c); d = c.map(x => ({time: x.time, value: x.close}));
+    } else {
+      s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 40}, 0);
+      s.setData(d);
+    }
+    MAIN.push({s, name, col, d});
+    const thin = {lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: rankFmt};
+    if (ind('iSMA')) TV.addSeries(LC.LineSeries, Object.assign({color: col + 'cc', lineStyle: 2}, thin), 0).setData(sma(d, per('pSMA')));
+    if (ind('iEMA')) TV.addSeries(LC.LineSeries, Object.assign({color: col + '99', lineStyle: 1}, thin), 0).setData(ema(d, per('pEMA')));
+    if (i === 0 && ind('iBB')){ const [u, l] = bands(d, per('pBB'), 2);
+      TV.addSeries(LC.LineSeries, Object.assign({color: '#90a1b988'}, thin), 0).setData(u);
+      TV.addSeries(LC.LineSeries, Object.assign({color: '#90a1b988'}, thin), 0).setData(l); }
+    if (i === 0 && ind('iMOM') && d.length > 1){
+      const m = TV.addSeries(LC.HistogramSeries, {priceFormat: {type: 'custom', minMove: 1, formatter: v => (v > 0 ? '+' : '') + Math.round(v)}, priceLineVisible: false}, 1);
+      m.setData(d.slice(1).map((p, k) => { const v = d[k].value - p.value; return {time: p.time, value: v, color: v > 0 ? '#7bc33b' : v < 0 ? '#e0365a' : '#90a1b9'}; }));
+      m.priceScale().applyOptions({invertScale: false});
+      const ps = TV.panes(); if (ps.length > 1){ ps[0].setStretchFactor(3); ps[1].setStretchFactor(1); }
+    }
+  });
+  TV.timeScale().fitContent();
+  const paint = param => {
+    lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? param.seriesData.get(m.s) : null;
+      if (!v) v = m.d[m.d.length - 1]; const val = v ? (v.close !== undefined ? v.close : v.value) : null;
+      return '<span><i style="display:inline-block;width:10px;height:10px;background:' + m.col + ';margin-right:6px"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b></span>'; }).join('');
+  };
+  paint(null); TV.subscribeCrosshairMove(paint);
+}
+
+function chips(){
+  document.getElementById('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip"><i style="background:' + COLORS[i % COLORS.length] + '"></i>' + esc(DATA.names[id]) + ' <b data-rm="' + id + '">×</b></span>').join('') : '<span class="empty">No creators picked yet. Up to 6 at once.</span>';
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { SEL = SEL.filter(x => x !== b.dataset.rm); syncHash(); refreshCharts(); });
+}
+function refreshCharts(){ if (!DATA) return; chips(); drawChart(); }
+function addSel(ids){ for (const id of ids) if (DATA.names[id] && !SEL.includes(id) && SEL.length < 6) SEL.push(id); syncHash(); refreshCharts(); }
+function syncHash(){ const h = '#charts' + (SEL.length ? '=' + SEL.map(id => encodeURIComponent(DATA.names[id])).join(',') : ''); if (location.hash !== h) history.replaceState(null, '', h); }
+function openChart(ids){ SEL = []; show('charts'); addSel(ids); }
+
+function show(v){
+  document.getElementById('v-radar').hidden = v !== 'radar';
+  document.getElementById('v-charts').hidden = v !== 'charts';
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.v === v));
+  if (v === 'charts') refreshCharts();
+}
+function route(){
+  if (!DATA){ show('radar'); return; }
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('charts')){
+    const want = h.indexOf('=') > 0 ? h.slice(h.indexOf('=') + 1).split(',') : [];
+    const byName = {}; for (const id in DATA.names) byName[DATA.names[id].toLowerCase()] = id;
+    const ids = want.map(n => byName[n.trim().toLowerCase()]).filter(Boolean);
+    if (ids.length) SEL = ids.slice(0, 6);
+    show('charts');
+  } else show('radar');
+}
+document.querySelectorAll('.nav a').forEach(a => a.onclick = e => { e.preventDefault(); if (a.dataset.v === 'charts') syncHash(); else history.replaceState(null, '', '#radar'); show(a.dataset.v); });
+document.addEventListener('click', e => { const t = e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); });
+
+const q = document.getElementById('q'), sug = document.getElementById('sug');
+function suggest(){
+  const v = q.value.trim().toLowerCase();
+  if (!v || !DATA){ sug.style.display = 'none'; return; }
+  const m = DATA.rows.filter(r => r.name.toLowerCase().includes(v) && !SEL.includes(r.id)).sort((a, b) => a.rank - b.rank).slice(0, 8);
+  sug.innerHTML = m.map((r, i) => '<div data-add="' + r.id + '"' + (i === 0 ? ' class="hl"' : '') + '>' + esc(r.name) + ' <span>#' + r.rank + '</span></div>').join('') || '<div><span>No match</span></div>';
+  sug.style.display = 'block';
+  sug.querySelectorAll('[data-add]').forEach(d => d.onmousedown = () => { addSel([d.dataset.add]); q.value = ''; sug.style.display = 'none'; });
+}
+q.oninput = suggest;
+q.onkeydown = e => { if (e.key === 'Enter'){ const f = sug.querySelector('[data-add]'); if (f){ addSel([f.dataset.add]); q.value = ''; sug.style.display = 'none'; } } };
+q.onblur = () => setTimeout(() => sug.style.display = 'none', 150);
+document.getElementById('addTop').onclick = () => addSel(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
+document.getElementById('addCheap').onclick = () => addSel(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
+document.getElementById('clr').onclick = () => { SEL = []; syncHash(); refreshCharts(); };
+document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { if (b.disabled) return; CT = b.dataset.ct; drawChart(); });
+document.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { CS = +b.dataset.cs; document.querySelectorAll('[data-cs]').forEach(x => x.classList.toggle('on', x === b)); if (CT === 'candle') drawChart(); });
+['iSMA', 'iEMA', 'iBB', 'iMOM', 'pSMA', 'pEMA', 'pBB'].forEach(id => document.getElementById(id).onchange = drawChart);
+window.addEventListener('hashchange', () => { if (DATA) route(); });
 load();
 </script>
 </body></html>
