@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Motion Radar</title>
+<meta name="description" content="Fan-made radar for Motion creator leaderboard moves. Who is cheap and rising.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,400..900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050812;--card:#0b1024;--line:#1d2546;--pink:#ff3877;--cyan:#00d8f4;--mut:#90a1b9;--up:#7bc33b;--down:#e0365a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:linear-gradient(180deg,#0e132a 0,var(--bg) 520px);color:#fff;font-family:Archivo,system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+h1{font-size:46px;font-weight:900;letter-spacing:-1px;line-height:1}
+h1 span{color:var(--pink)}
+.sub{color:var(--mut);margin-top:8px;font-size:16px;max-width:620px;line-height:1.45}
+.meta{color:var(--mut);font-size:13px;text-align:right;line-height:1.6}
+.meta b{color:#fff;font-weight:700}
+.tabs{display:flex;gap:6px;margin:26px 0 14px;align-items:center;flex-wrap:wrap}
+.tabs .lbl{color:var(--mut);font-size:13px;margin-right:6px;text-transform:uppercase;letter-spacing:2px}
+.tabs button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:8px 14px;font:700 14px Archivo,sans-serif;cursor:pointer}
+.tabs button.on{background:var(--cyan);border-color:var(--cyan);color:var(--bg)}
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}h1{font-size:36px}.meta{text-align:left}}
+.card{background:var(--card);border:1px solid var(--line);padding:18px}
+.card h2{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);font-weight:700;margin-bottom:12px}
+.card h2 em{font-style:normal;color:var(--pink)}
+svg text{font-family:Archivo,sans-serif}
+.lists{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+.row:last-child{border-bottom:0}
+.row .r{width:34px;color:var(--cyan);font-weight:700}
+.row .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .c{font-weight:800;min-width:46px;text-align:right}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--mut)}
+.empty{color:var(--mut);font-size:14px;padding:6px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{color:var(--mut);font-weight:600;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+td{padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.num,th.num{text-align:right}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 6px;margin-left:6px;background:var(--pink);color:#fff;letter-spacing:.5px}
+.how{color:var(--mut);font-size:14px;line-height:1.6;margin-top:16px}
+.how b{color:#fff}
+#tip{position:fixed;pointer-events:none;background:#000;border:1px solid var(--cyan);padding:8px 10px;font-size:13px;line-height:1.45;display:none;z-index:9}
+footer{color:var(--mut);font-size:12px;margin-top:28px;line-height:1.6}
+footer a{color:var(--cyan)}
+</style></head><body>
+<div class="wrap">
+<header>
+ <div><h1>Motion <span>Radar</span></h1>
+ <p class="sub">Who's climbing the Motion creator leaderboard while their history still says they're cold. Those are the creators most likely to still be cheap on stars.</p></div>
+ <div class="meta" id="meta">loading…</div>
+</header>
+
+<div class="tabs"><span class="lbl">Move over</span>
+ <button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">all saved</button></div>
+
+<div class="grid">
+ <div class="card"><h2>The radar · <em>top right is the sweet spot</em></h2><div id="chart"></div></div>
+ <div class="lists">
+  <div class="card"><h2>🎯 Cheap &amp; rising</h2><div id="l1"></div></div>
+  <div class="card"><h2>🚀 Biggest climbers</h2><div id="l2"></div></div>
+  <div class="card"><h2>🧊 Cooling off</h2><div id="l3"></div></div>
+ </div>
+</div>
+
+<div class="card" style="margin-top:16px"><h2>All creators</h2><div style="overflow-x:auto"><table id="tbl"></table></div>
+ <div class="how"><b>How to read it.</b> Motion gives every creator 1 to 8 stars based on the last 14 days, and lineups have a star cap. Stars and scores aren't public, so this uses rank instead. <b>Avg rank</b> is the creator's average position over the saved history (up to 14 days). A high number there means a cold recent past, which likely means fewer stars. <b>Heat</b> is how much better their rank is now than that average. Cheap &amp; rising = bottom half on avg rank, and up 2 or more spots. It's an estimate, not official star data.</div>
+</div>
+
+<footer>Fan-made for Mogathon. Not affiliated with Motion. Data: <a href="https://leaderboard.motion.game" target="_blank" rel="noopener">leaderboard.motion.game</a>, saved every 4 hours since 13 Nov 2026 in <a href="https://github.com/kristie-dude/motion-radar" target="_blank" rel="noopener">this repo</a>. The leaderboard's own change number is the move over the last 4 hours.</footer>
+</div>
+<div id="tip"></div>
+
+<script>
+const H = 3600e3;
+let SNAPS = [], WIN = 24, SORT = {k: 'rank', d: 1};
+
+function cls(v){ return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
+function fmt(v){ return v > 0 ? '▲' + v : v < 0 ? '▼' + (-v) : '0'; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function load(){
+  let h = {snapshots: []};
+  try { h = await (await fetch('data/history.json?t=' + Date.now())).json(); } catch(e) {}
+  try {
+    const live = await (await fetch('https://leaderboard.motion.game/api/leaderboard')).json();
+    const last = h.snapshots[h.snapshots.length - 1];
+    if (live && live.rows && (!last || live.asOf > last.asOf))
+      h.snapshots.push({asOf: live.asOf, live: true, rows: live.rows.map(r => [r.id, r.name, r.position, r.delta, !!r.isNew])});
+  } catch(e) {}
+  SNAPS = h.snapshots.sort((a, b) => a.asOf < b.asOf ? -1 : 1);
+  render();
+}
+
+function build(){
+  const pts = {}, names = {};
+  for (const s of SNAPS){
+    const t = Date.parse(s.asOf);
+    for (const [id, name, pos, delta, isNew] of s.rows){
+      names[id] = name;
+      const p = pts[id] || (pts[id] = []);
+      const tb = t - 4 * H;
+      if (!isNew && !p.some(q => Math.abs(q.t - tb) < H)) p.push({t: tb, r: pos + delta});
+      if (!p.some(q => q.t === t)) p.push({t, r: pos});
+    }
+  }
+  const last = SNAPS[SNAPS.length - 1], tNow = Date.parse(last.asOf);
+  const N = last.rows.length;
+  const out = last.rows.map(([id, name, pos, delta, isNew]) => {
+    const p = pts[id].sort((a, b) => a.t - b.t);
+    const from = WIN ? tNow - WIN * H : -Infinity;
+    let base = p[0];
+    for (const q of p) if (q.t <= from) base = q;
+    const recent = p.filter(q => q.t >= tNow - 14 * 24 * H);
+    const avg = recent.reduce((a, q) => a + q.r, 0) / recent.length;
+    return {id, name, rank: pos, ch4: delta, chw: base.r - pos, avg, heat: avg - pos, isNew, p, cheap: avg > N / 2};
+  });
+  const first = Math.min(...Object.values(pts).map(p => Math.min(...p.map(q => q.t))));
+  return {rows: out, N, tNow, first, live: !!last.live};
+}
+
+function list(el, rows){
+  document.getElementById(el).innerHTML = rows.length ? rows.map(r =>
+    '<div class="row"><span class="r">#' + r.rank + '</span><span class="n">' + esc(r.name) + '</span><span class="c ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></div>').join('')
+    : '<div class="empty">Nobody right now.</div>';
+}
+
+function spark(p, N){
+  const w = 90, h = 24, t0 = p[0].t, t1 = p[p.length - 1].t || t0 + 1;
+  const xy = p.map(q => [(t1 === t0 ? w : (q.t - t0) / (t1 - t0) * w).toFixed(1), (2 + (q.r - 1) / Math.max(N - 1, 1) * (h - 4)).toFixed(1)]);
+  return '<svg width="' + w + '" height="' + h + '"><polyline fill="none" stroke="#00d8f4" stroke-width="1.6" points="' + xy.map(a => a.join(',')).join(' ') + '"/><circle cx="' + xy[xy.length - 1][0] + '" cy="' + xy[xy.length - 1][1] + '" r="2.4" fill="#ff3877"/></svg>';
+}
+
+function chart(rows, N){
+  const W = 640, Hh = 540, m = {l: 44, r: 16, t: 16, b: 40};
+  const iw = W - m.l - m.r, ih = Hh - m.t - m.b;
+  const ymax = Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.15;
+  const x = v => m.l + (v - 1) / Math.max(N - 1, 1) * iw;
+  const y = v => m.t + ih / 2 - v / ymax * ih / 2;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" width="100%">';
+  s += '<rect x="' + x(N / 2) + '" y="' + m.t + '" width="' + (x(N) - x(N / 2)) + '" height="' + ih / 2 + '" fill="#ff3877" opacity=".08"/>';
+  s += '<text x="' + (x(N / 2) + 8) + '" y="' + (m.t + 16) + '" fill="#ff3877" font-size="13" font-weight="800" opacity=".9">CHEAP &amp; RISING ZONE</text>';
+  s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="#1d2546"/>';
+  s += '<line x1="' + x(N / 2) + '" x2="' + x(N / 2) + '" y1="' + m.t + '" y2="' + (m.t + ih) + '" stroke="#1d2546" stroke-dasharray="4 4"/>';
+  s += '<text x="' + m.l + '" y="' + (Hh - 10) + '" fill="#90a1b9" font-size="12">◀ hot recent past</text>';
+  s += '<text x="' + (W - m.r) + '" y="' + (Hh - 10) + '" text-anchor="end" fill="#90a1b9" font-size="12">cold recent past (avg rank) ▶</text>';
+  s += '<text x="14" y="' + (m.t + 12) + '" fill="#90a1b9" font-size="12">▲ climbing</text>';
+  s += '<text x="14" y="' + (m.t + ih) + '" fill="#90a1b9" font-size="12">▼ falling</text>';
+  const top = new Set(rows.filter(r => r.chw !== 0).sort((a, b) => Math.abs(b.chw) - Math.abs(a.chw)).slice(0, 7).map(r => r.id));
+  for (const r of rows){
+    const col = r.chw > 0 ? (r.cheap ? '#ff3877' : '#7bc33b') : r.chw < 0 ? '#e0365a' : '#90a1b9';
+    s += '<circle data-id="' + r.id + '" cx="' + x(r.avg) + '" cy="' + y(r.chw) + '" r="' + (top.has(r.id) ? 6 : 4) + '" fill="' + col + '" opacity=".9" style="cursor:pointer"/>';
+    if (top.has(r.id)) { const R = x(r.avg) > W - 150; s += '<text x="' + (x(r.avg) + (R ? -9 : 9)) + '" y="' + (y(r.chw) + 4) + '"' + (R ? ' text-anchor="end"' : '') + ' fill="#fff" font-size="12" font-weight="700" paint-order="stroke" stroke="#0b1024" stroke-width="3">' + esc(r.name) + '</text>'; }
+  }
+  return s + '</svg>';
+}
+
+function render(){
+  if (!SNAPS.length){ document.getElementById('meta').textContent = 'No data yet.'; return; }
+  const {rows, N, tNow, first, live} = build();
+  const hrs = Math.round((tNow - first) / H);
+  document.getElementById('meta').innerHTML = 'Last update <b>' + new Date(tNow).toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit'}) + '</b>' + (live ? ' (live)' : '') +
+    '<br><b>' + SNAPS.length + '</b> snapshots · <b>' + hrs + 'h</b> of history · <b>' + N + '</b> creators';
+  document.getElementById('chart').innerHTML = chart(rows, N);
+  list('l1', rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat).slice(0, 5));
+  list('l2', rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 5));
+  list('l3', rows.filter(r => !r.cheap && r.chw < 0).sort((a, b) => a.chw - b.chw).slice(0, 5));
+  const cols = [['rank','#',1],['name','Creator',0],['ch4','4h',1],['chw', WIN ? WIN + 'h' : 'All', 1],['avg','Avg rank',1],['heat','Heat',1],['p','Trend',0]];
+  const sorted = rows.slice().sort((a, b) => { const k = SORT.k; const va = k === 'name' ? a.name.toLowerCase() : a[k], vb = k === 'name' ? b.name.toLowerCase() : b[k]; return (va < vb ? -1 : va > vb ? 1 : 0) * SORT.d; });
+  let t = '<tr>' + cols.map(c => '<th class="' + (c[2] ? 'num' : '') + '" data-k="' + c[0] + '">' + c[1] + (SORT.k === c[0] ? (SORT.d > 0 ? ' ↑' : ' ↓') : '') + '</th>').join('') + '</tr>';
+  for (const r of sorted) t += '<tr><td class="num" style="color:#00d8f4;font-weight:700">' + r.rank + '</td><td>' + esc(r.name) + (r.cheap && r.chw >= 2 ? '<span class="tag">CHEAP & RISING</span>' : '') + '</td><td class="num ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</td><td class="num ' + cls(r.chw) + '">' + fmt(r.chw) + '</td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num ' + cls(Math.round(r.heat)) + '">' + (r.heat > 0 ? '+' : '') + r.heat.toFixed(1) + '</td><td>' + spark(r.p, N) + '</td></tr>';
+  const tbl = document.getElementById('tbl'); tbl.innerHTML = t;
+  tbl.querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'p') return; SORT = {k, d: SORT.k === k ? -SORT.d : (k === 'name' || k === 'rank' || k === 'avg' ? 1 : -1)}; render(); });
+  const tip = document.getElementById('tip'), byId = Object.fromEntries(rows.map(r => [r.id, r]));
+  document.querySelectorAll('#chart circle').forEach(c => {
+    c.onmousemove = e => { const r = byId[c.dataset.id]; tip.style.display = 'block'; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+      tip.innerHTML = '<b>' + esc(r.name) + '</b><br>Rank #' + r.rank + ' · move ' + fmt(r.chw) + '<br>Avg rank ' + r.avg.toFixed(1); };
+    c.onmouseleave = () => tip.style.display = 'none';
+  });
+}
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on')); b.classList.add('on'); WIN = +b.dataset.w; render();
+});
+load();
+</script>
+</body></html>
