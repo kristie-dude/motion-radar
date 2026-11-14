@@ -141,18 +141,24 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 /* charts */
 .pick{position:relative;flex:1;min-width:240px;max-width:360px}
 .pick .search{width:100%}
-#sug{position:absolute;left:0;right:0;top:calc(100% + 6px);background:#0d1433;border:1px solid var(--line);border-radius:var(--r-md);z-index:30;display:none;max-height:320px;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.45)}
-#sug div{padding:9px 14px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;gap:12px}
-#sug div:hover,#sug div.hl{background:var(--raise)}
-#sug span{color:var(--fog)}
+#sug{position:absolute;left:0;width:max(100%,min(340px,calc(100vw - 40px)));top:calc(100% + 6px);background:#0d1433;border:1px solid var(--line);border-radius:var(--r-md);z-index:30;display:none;max-height:min(420px,60vh);overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.45);overscroll-behavior:contain}
+#sug .sh{padding:10px 14px 6px;font-size:12px;color:var(--fog);cursor:default;position:sticky;top:0;background:#0d1433;z-index:1}
+#sug .op{padding:7px 12px;cursor:pointer;font-size:14px;display:grid;grid-template-columns:30px 28px 1fr auto;align-items:center;gap:10px}
+#sug .op .rk{color:var(--fog);font-size:12px;font-variant-numeric:tabular-nums}
+#sug .op .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#sug .none{padding:12px 14px;color:var(--fog);font-size:14px}
+#sug .op.act{background:var(--raise)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:999px;background:var(--raise);border:1px solid var(--line);font-size:14px;font-weight:600}
 .chip i{width:10px;height:10px;border-radius:50%}
 .chip button{border:0;background:transparent;width:22px;height:22px;border-radius:50%;cursor:pointer;color:var(--fog);font-size:16px;line-height:1}
 .chip button:hover{background:var(--line);color:var(--text)}
 .bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);margin-bottom:12px}
-.bar .grp{display:flex;align-items:center;gap:8px}
+.bar .grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bar .lbl{color:var(--fog);font-size:13px}
+.defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 22px;margin:14px 0 0;font-size:13.5px;line-height:1.5}
+.defs dt{font-weight:700;color:var(--text);margin-bottom:2px}
+.defs dd{margin:0;color:var(--fog)}
 .tog{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:999px;padding:3px;font-size:13px;font-weight:600;color:var(--fog)}
 .tog button{border:0;background:transparent;color:inherit;font-weight:650;padding:3px 9px;border-radius:999px;cursor:pointer}
 .tog.on{border-color:var(--cyan);background:rgba(0,216,244,.08);color:var(--text)}
@@ -228,24 +234,31 @@ footer a{color:var(--fog)}
   <article class="panel">
     <div class="head"><h2>Rank charts</h2>
       <div class="tools">
-        <div class="pick"><input class="search" id="q" placeholder="Add a creator" autocomplete="off" aria-label="Add a creator to the chart"><div id="sug" role="listbox"></div></div>
+        <div class="pick"><input class="search" id="q" placeholder="Pick or search a creator" autocomplete="off" aria-label="Pick or search a creator to add" aria-controls="sug" aria-expanded="false"><div id="sug" role="listbox"></div></div>
         <button class="btn" id="addTop">Add top climbers</button><button class="btn" id="addCheap">Add cheap and rising</button><button class="btn" id="clr">Clear</button>
       </div></div>
     <div class="chips" id="chips"></div>
     <div class="bar">
-      <div class="grp"><span class="lbl">Indicators</span>
+      <div class="grp"><span class="lbl">On the lines</span>
         <span class="tog on" data-ind="base"><button aria-pressed="true">Star baseline</button></span>
-        <span class="tog" data-ind="cross"><button aria-pressed="false">Crossover</button><input id="pF" type="number" value="6" min="2" max="90" aria-label="Fast average, in updates"><input id="pS" type="number" value="18" min="3" max="180" aria-label="Slow average, in updates"></span>
-        <span class="tog" data-ind="sma"><button aria-pressed="false">SMA</button><input id="pSMA" type="number" value="6" min="2" max="90" aria-label="SMA period"></span>
-        <span class="tog" data-ind="ema"><button aria-pressed="false">EMA</button><input id="pEMA" type="number" value="12" min="2" max="90" aria-label="EMA period"></span>
-        <span class="tog" data-ind="bb"><button aria-pressed="false">Bollinger</button><input id="pBB" type="number" value="12" min="3" max="90" aria-label="Bollinger period"></span>
-        <span class="tog on" data-ind="mom"><button aria-pressed="true">Momentum</button></span>
+        <span class="tog" data-ind="trend"><button aria-pressed="false">Trend</button><input id="pT" type="number" value="6" min="2" max="90" aria-label="Trend smoothing, in updates"></span>
+        <span class="tog" data-ind="turns"><button aria-pressed="false">Turns</button><input id="pF" type="number" value="6" min="2" max="90" aria-label="Fast average, in updates"><input id="pS" type="number" value="18" min="3" max="180" aria-label="Slow average, in updates"></span>
+      </div>
+      <div class="grp"><span class="lbl">Lower panel</span>
+        <div class="seg sm" id="lower" aria-label="Lower panel"><button data-l="heat" class="on">Heat</button><button data-l="chg">24h change</button><button data-l="off">Off</button></div>
       </div>
     </div>
     <div id="legend"></div>
     <div id="tv"></div>
     <div class="key" id="ikey"></div>
-    <p class="note">Rank #1 is at the top, so a rising line means climbing. There's one point every 4 hours, so 6 points is a day. <b>Star baseline</b> is the creator's average rank over the last 14 days, the same window Motion uses for stars: a rank line well above it means they're hot now and their stars probably haven't caught up. <b>Crossover</b> compares a fast and a slow average (6 and 18 updates, one day and three days) for the first creator, and marks where momentum turns. <b>Momentum</b> shows spots gained or lost at each update. Compare up to 4 creators.</p>
+    <p class="note">Rank #1 is at the top, so a rising line means climbing. There's one point every 4 hours. Every indicator is drawn for each creator in that creator's colour, so they work the same with one creator or four.</p>
+    <dl class="defs">
+      <div><dt>Star baseline</dt><dd>Average rank over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest.</dd></div>
+      <div><dt>Trend</dt><dd>The rank line smoothed over the last few updates (6 is one day), so the direction shows through the noise.</dd></div>
+      <div><dt>Turns</dt><dd>Arrows where the one-day average crosses the three-day average. Green means the creator started climbing, orange means they started falling.</dd></div>
+      <div><dt>Heat</dt><dd>Spots above (+) or below (−) their own 14-day average right now. High heat means hot now while the stars still reflect the past.</dd></div>
+      <div><dt>24h change</dt><dd>Spots gained (+) or lost (−) over the previous 24 hours, at every point. Easy to compare between creators.</dd></div>
+    </dl>
   </article>
 </section>
 
@@ -406,25 +419,33 @@ function scatter(rows, N){
     s += '<path d="M' + (ax - 330) + ' ' + (ay - 6) + ' C ' + (ax - 400) + ' ' + (ay - 4) + ', ' + (ax - 420) + ' ' + (ay + 22) + ', ' + (ax - 392) + ' ' + (m.t + 26) + '" fill="none" stroke="#ff3877" stroke-width="2.5" stroke-linecap="round"/>' +
          '<path d="M' + (ax - 402) + ' ' + (m.t + 14) + ' L' + (ax - 392) + ' ' + (m.t + 27) + ' L' + (ax - 380) + ' ' + (m.t + 17) + '" fill="none" stroke="#ff3877" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   }
-  const cand = rows.filter(r => r.chw !== 0).sort((a, b) => Math.abs(b.chw) - Math.abs(a.chw)).slice(0, 10);
+  const pos = rows.map(r => ({id: r.id, x: x(r.avg), y: y(r.chw)}));
+  const cand = rows.filter(r => r.chw !== 0).sort((a, b) => Math.abs(b.chw) - Math.abs(a.chw)).slice(0, 12);
   const boxes = [], labels = {};
+  const hitsDot = (b, own) => pos.some(o => o.id !== own && o.x + 6 > b.x0 && o.x - 6 < b.x1 && o.y + 6 > b.y0 && o.y - 6 < b.y1);
   for (const r of cand){
-    if (Object.keys(labels).length >= 6) break;
-    const px = x(r.avg), py = y(r.chw), wd = r.name.length * 7 + 14, R = px > W - 160;
-    const bx = R ? px - 11 - wd : px + 11, b = {x0: bx, x1: bx + wd, y0: py - 9, y1: py + 7};
-    if (boxes.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)) continue;
-    boxes.push(b); labels[r.id] = R;
+    if (Object.keys(labels).length >= 7) break;
+    const px = x(r.avg), py = y(r.chw), wd = r.name.length * 7.4 + 6;
+    const sides = px > W - 170 ? [true, false] : [false, true];
+    for (const R of sides){
+      const bx = R ? px - 12 - wd : px + 12, b = {x0: bx - 3, x1: bx + wd + 3, y0: py - 10, y1: py + 8};
+      if (b.x0 < m.l - 4 || b.x1 > W - 2) continue;
+      if (boxes.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0) || hitsDot(b, r.id)) continue;
+      boxes.push(b); labels[r.id] = R; break;
+    }
   }
   const top = new Set(Object.keys(labels));
   const ordered = rows.slice().sort((a, b) => Math.abs(a.chw) - Math.abs(b.chw));
+  let txt = '';
   for (const r of ordered){
     const col = r.chw > 0 ? (r.cheap && r.chw >= 2 ? PINK : UP) : r.chw < 0 ? DOWN : FOG;
     const px = x(r.avg), py = y(r.chw), big = top.has(r.id);
     const delay = FIRSTPAINT ? (.25 + Math.hypot(cx - px, cy - py) / iw * 1.1).toFixed(2) : 0;
     s += '<g class="hit" data-id="' + r.id + '" style="cursor:pointer"><circle cx="' + px + '" cy="' + py + '" r="11" fill="transparent"/>' +
          '<circle class="dot' + (FIRSTPAINT ? ' dot-in' : '') + '" style="transform-origin:' + px + 'px ' + py + 'px;animation-delay:' + delay + 's" cx="' + px + '" cy="' + py + '" r="' + (big ? 6 : 4.5) + '" fill="' + col + '" stroke="#0b1029" stroke-width="2"/></g>';
-    if (big){ const R = labels[r.id]; s += '<text x="' + (px + (R ? -11 : 11)) + '" y="' + (py + 4) + '"' + (R ? ' text-anchor="end"' : '') + ' fill="#eef1fa" font-size="13" font-weight="650" paint-order="stroke" stroke="#0b1029" stroke-width="4" style="pointer-events:none">' + esc(r.name) + '</text>'; }
+    if (big){ const R = labels[r.id]; txt += '<text x="' + (px + (R ? -12 : 12)) + '" y="' + (py + 4) + '"' + (R ? ' text-anchor="end"' : '') + ' fill="#eef1fa" font-size="13" font-weight="650" paint-order="stroke" stroke="#0b1029" stroke-width="5" stroke-linejoin="round" style="pointer-events:none">' + esc(r.name) + '</text>'; }
   }
+  s += txt;
   return s + '</svg>';
 }
 function bindScatter(rows){
@@ -489,7 +510,8 @@ $('ramp').innerHTML = [-12, -6, -2, 0, 2, 6, 12].map(d => '<i style="' + (tint(d
 
 /* ---------- charts view ---------- */
 let SEL = [], TV = null, MAIN = [];
-const IND = {base: true, cross: false, sma: false, ema: false, bb: false, mom: true};
+const IND = {base: true, trend: false, turns: false};
+let LOWER = 'heat';
 function baseline(d){ const o = []; let j = 0, sum = 0;
   for (let i = 0; i < d.length; i++){ sum += d[i].value; while (d[i].time - d[j].time > 14 * 86400){ sum -= d[j].value; j++; } o.push({time: d[i].time, value: sum / (i - j + 1)}); }
   return o; }
@@ -500,6 +522,8 @@ function crossings(f, sl){ const slow = new Map(sl.map(p => [p.time, p.value])),
   return out; }
 function sma(d, n){ const o = []; let s = 0; for (let i = 0; i < d.length; i++){ s += d[i].value; if (i >= n) s -= d[i - n].value; if (i >= n - 1) o.push({time: d[i].time, value: s / n}); } return o; }
 function ema(d, n){ const o = [], k = 2 / (n + 1); let e = null; for (const p of d){ e = e === null ? p.value : p.value * k + e * (1 - k); o.push({time: p.time, value: e}); } return o; }
+function change24(d){ const o = []; let j = 0; for (let i = 0; i < d.length; i++){ while (j + 1 < i && d[j + 1].time <= d[i].time - 86400 + 900) j++; if (d[j].time <= d[i].time - 86400 + 900) o.push({time: d[i].time, value: d[j].value - d[i].value}); } return o; }
+function heatData(d){ const b = baseline(d); return d.map((p, i) => ({time: p.time, value: +(b[i].value - p.value).toFixed(1)})); }
 function bands(d, n, m){ const u = [], l = []; for (let i = n - 1; i < d.length; i++){ const w = d.slice(i - n + 1, i + 1).map(p => p.value); const a = w.reduce((x, y) => x + y, 0) / n; const sd = Math.sqrt(w.reduce((x, y) => x + (y - a) * (y - a), 0) / n); u.push({time: d[i].time, value: a + m * sd}); l.push({time: d[i].time, value: a - m * sd}); } return [u, l]; }
 function lineData(id){ const seen = new Set(), o = []; for (const q of DATA.pts[id] || []){ const t = Math.floor(q.t / 1000); if (!seen.has(t)){ seen.add(t); o.push({time: t, value: q.r}); } } return o.sort((a, b) => a.time - b.time); }
 const rankFmt = {type: 'custom', minMove: 1, formatter: v => v < 0.5 ? '' : '#' + Math.round(v)};
@@ -519,38 +543,47 @@ function drawChart(){
     timeScale: {timeVisible: true, secondsVisible: false, borderColor: '#1c2550'},
     crosshair: {mode: 0, vertLine: {color: '#5d6a8c', labelBackgroundColor: '#121a3d'}, horzLine: {color: '#5d6a8c', labelBackgroundColor: '#121a3d'}}});
   const thin = {lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: rankFmt};
+  const one = SEL.length === 1, sgn = v => (v > 0 ? '+' : '') + (Math.abs(v) < 10 && v % 1 ? v.toFixed(1) : Math.round(v));
+  const lowFmt = {type: 'custom', minMove: 0.1, formatter: sgn};
+  let lowFirst = null, crossShort = 0, crossCount = 0;
   SEL.forEach((id, i) => {
     const col = SERIES[i], name = DATA.names[id];
     const d = lineData(id);
-    const s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 30, pointMarkersRadius: 3, title: name, lastPriceAnimation: 0}, 0);
+    const s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 30, pointMarkersRadius: 3, lastPriceAnimation: 0}, 0);
     s.setData(d);
-    MAIN.push({s, name, col, d});
+    MAIN.push({s, name, col, d, id});
     if (IND.base) TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: col + 'b3', lineWidth: 2, lineStyle: 3}), 0).setData(baseline(d));
-    if (IND.sma) TV.addSeries(LC.LineSeries, Object.assign({color: col, lineStyle: 2}, thin), 0).setData(sma(d, per('pSMA')));
-    if (IND.ema) TV.addSeries(LC.LineSeries, Object.assign({color: col, lineStyle: 1}, thin), 0).setData(ema(d, per('pEMA')));
-    if (i === 0 && IND.cross){
-      const f = sma(d, per('pF')), sl = sma(d, Math.max(per('pS'), per('pF') + 1));
-      TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: '#eef1fa'}), 0).setData(f);
-      TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: '#8e9bb8', lineStyle: 2}), 0).setData(sl);
-      const mk = crossings(f, sl); if (mk.length) LC.createSeriesMarkers(s, mk);
-      CROSSINFO = sl.length ? (mk.length ? '' : 'No crossovers yet in this history.') : 'Crossover needs ' + Math.max(per('pS'), per('pF') + 1) + ' updates of history. It will appear as the history grows.';
+    if (IND.trend) TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: col, lineWidth: 1, lineStyle: 1}), 0).setData(ema(d, per('pT')));
+    if (IND.turns){
+      const fN = per('pF'), sN = Math.max(per('pS'), fN + 1), f = sma(d, fN), sl = sma(d, sN);
+      if (!sl.length) crossShort = sN;
+      const mk = crossings(f, sl).map(k => one ? k : Object.assign(k, {text: ''}));
+      crossCount += mk.length;
+      if (mk.length) LC.createSeriesMarkers(s, mk);
     }
-    if (i === 0 && IND.bb){ const [u, l] = bands(d, per('pBB'), 2);
-      TV.addSeries(LC.LineSeries, Object.assign({color: '#5d6a8c'}, thin), 0).setData(u);
-      TV.addSeries(LC.LineSeries, Object.assign({color: '#5d6a8c'}, thin), 0).setData(l); }
-    if (i === 0 && IND.mom && d.length > 1){
-      const m = TV.addSeries(LC.HistogramSeries, {priceFormat: {type: 'custom', minMove: 1, formatter: v => (v > 0 ? '+' : '') + Math.round(v)}, priceLineVisible: false, lastValueVisible: false}, 1);
-      m.setData(d.slice(1).map((p, k) => { const v = d[k].value - p.value; return {time: p.time, value: v, color: v > 0 ? UP : v < 0 ? DOWN : '#5d6a8c'}; }));
-      m.priceScale().applyOptions({invertScale: false});
-      const ps = TV.panes(); if (ps.length > 1){ ps[0].setStretchFactor(3); ps[1].setStretchFactor(1); }
+    if (LOWER !== 'off' && d.length > 1){
+      const data = LOWER === 'heat' ? heatData(d) : change24(d);
+      let ls;
+      if (one){
+        ls = TV.addSeries(LC.HistogramSeries, {priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true}, 1);
+        ls.setData(data.map(p => ({time: p.time, value: p.value, color: p.value > 0 ? UP : p.value < 0 ? DOWN : '#5d6a8c'})));
+      } else {
+        ls = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true, crosshairMarkerRadius: 3}, 1);
+        ls.setData(data);
+      }
+      MAIN[MAIN.length - 1].low = ls; MAIN[MAIN.length - 1].lowLast = data[data.length - 1];
+      if (!lowFirst){ lowFirst = ls; ls.priceScale().applyOptions({invertScale: false}); ls.createPriceLine({price: 0, color: '#3a4577', lineWidth: 1, lineStyle: 2, axisLabelVisible: false}); }
     }
   });
+  if (lowFirst){ const ps = TV.panes(); if (ps.length > 1){ ps[0].setStretchFactor(3); ps[1].setStretchFactor(1.15); } }
+  CROSSINFO = IND.turns ? (crossShort ? 'Turns need ' + crossShort + ' updates of history. They appear as the history grows.' : crossCount ? '' : 'No turns yet in this history.') : '';
   TV.timeScale().fitContent();
   ikey();
   const paint = param => {
     lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? param.seriesData.get(m.s) : null; if (!v) v = m.d[m.d.length - 1];
       const val = v ? v.value : null;
-      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b></span>'; }).join('');
+      let lw = ''; if (m.low){ let lv = param && param.seriesData ? param.seriesData.get(m.low) : null; if (!lv) lv = m.lowLast; if (lv && lv.value != null){ const x = lv.value; lw = ' <em class="mv ' + (x > 0 ? 'up' : x < 0 ? 'down' : 'flat') + '" style="font-style:normal;font-size:13px">' + (x > 0 ? '+' : '') + (x % 1 ? x.toFixed(1) : x) + '</em>'; } }
+      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b>' + lw + '</span>'; }).join('');
   };
   paint(null); TV.subscribeCrosshairMove(paint);
 }
@@ -558,12 +591,11 @@ let CROSSINFO = '';
 function keyLine(style, color, w){ const da = {solid: '', dash: '6 4', large: '10 5', dot: '1.5 3.5'}[style]; return '<svg width="26" height="10" aria-hidden="true"><line x1="1" y1="5" x2="25" y2="5" stroke="' + color + '" stroke-width="' + (w || 2) + '"' + (da ? ' stroke-dasharray="' + da + '"' : '') + ' stroke-linecap="round"/></svg>'; }
 function ikey(){
   const k = [[keyLine('solid', '#eef1fa', 2), 'Rank']];
-  if (IND.base) k.push([keyLine('large', '#eef1fa', 2), 'Star baseline, 14-day average']);
-  if (IND.cross) k.push([keyLine('solid', '#eef1fa', 1) + keyLine('dash', '#8e9bb8', 1), 'Fast and slow average, first creator']);
-  if (IND.sma) k.push([keyLine('dash', '#eef1fa', 1), 'SMA']);
-  if (IND.ema) k.push([keyLine('dot', '#eef1fa', 1), 'EMA']);
-  if (IND.bb) k.push([keyLine('solid', '#5d6a8c', 1), 'Bollinger bands, first creator']);
-  $('ikey').innerHTML = k.map(([g, l]) => '<span style="display:inline-flex;align-items:center;gap:7px">' + g + l + '</span>').join('') + (IND.cross && CROSSINFO ? '<span style="color:#5d6a8c">' + CROSSINFO + '</span>' : '');
+  if (IND.base) k.push([keyLine('large', '#eef1fa', 2), 'Star baseline']);
+  if (IND.trend) k.push([keyLine('dot', '#eef1fa', 1.5), 'Trend']);
+  if (IND.turns) k.push(['<b style="color:' + UP + '">▲</b><b style="color:' + DOWN + '">▼</b>', 'Turns']);
+  if (LOWER !== 'off') k.push(['<span style="color:#5d6a8c">▁▃</span>', LOWER === 'heat' ? 'Heat' : '24h change']);
+  $('ikey').innerHTML = k.map(([g, l]) => '<span style="display:inline-flex;align-items:center;gap:7px">' + g + l + '</span>').join('') + (CROSSINFO ? '<span style="color:#5d6a8c">' + CROSSINFO + '</span>' : '');
 }
 function chips(){
   $('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip"><i style="background:' + SERIES[i] + '"></i>' + esc(DATA.names[id]) + '<button data-rm="' + id + '" aria-label="Remove ' + esc(DATA.names[id]) + '">×</button></span>').join('') : '<span class="sub">No creators picked yet. You can compare up to 4.</span>';
@@ -604,17 +636,35 @@ $('hsort').onchange = e => { HSORT = e.target.value; matrix(); };
 document.querySelectorAll('#hmode button').forEach(b => b.onclick = () => { document.querySelectorAll('#hmode button').forEach(x => x.classList.toggle('on', x === b)); HMODE = b.dataset.m; matrix(); });
 
 const q = $('q'), sug = $('sug');
+function closeSug(){ sug.style.display = 'none'; q.setAttribute('aria-expanded', 'false'); }
 function suggest(){
+  if (!DATA) return;
   const v = q.value.trim().toLowerCase();
-  if (!v || !DATA){ sug.style.display = 'none'; return; }
-  const m = DATA.rows.filter(r => r.name.toLowerCase().includes(v) && !SEL.includes(r.id)).sort((a, b) => a.rank - b.rank).slice(0, 8);
-  sug.innerHTML = m.map((r, i) => '<div role="option" data-add="' + r.id + '"' + (i === 0 ? ' class="hl"' : '') + '>' + esc(r.name) + ' <span>#' + r.rank + '</span></div>').join('') || '<div><span>No creator matches that name</span></div>';
-  sug.style.display = 'block';
-  sug.querySelectorAll('[data-add]').forEach(d => d.onmousedown = () => { addSel([d.dataset.add]); q.value = ''; sug.style.display = 'none'; });
+  const m = DATA.rows.filter(r => !SEL.includes(r.id) && (!v || r.name.toLowerCase().includes(v))).sort((a, b) => a.rank - b.rank);
+  const full = SEL.length >= 4;
+  const head = '<div class="sh">' + (full ? 'Chart is full. Remove a creator to add another.' : v ? m.length + ' match' + (m.length === 1 ? '' : 'es') : 'All creators, by rank') + '</div>';
+  sug.innerHTML = head + (full ? '' : m.map((r, i) => '<div class="op' + (i === 0 ? ' act' : '') + '" role="option" data-add="' + r.id + '"><span class="rk">#' + r.rank + '</span>' + avatar(r.name, 26, r.chw) + '<span class="nm">' + esc(r.name) + '</span><span class="mv ' + cls(r.chw) + '">' + (r.chw ? fmt(r.chw) : '·') + '</span></div>').join('') || '<div class="none">No creator matches that name</div>');
+  sug.style.display = 'block'; q.setAttribute('aria-expanded', 'true');
+  sug.querySelectorAll('[data-add]').forEach(d => {
+    d.onmousedown = e => { e.preventDefault(); pickOne(d.dataset.add); };
+    d.onmouseenter = () => { sug.querySelectorAll('.op.act').forEach(x => x.classList.remove('act')); d.classList.add('act'); };
+  });
 }
-q.oninput = suggest;
-q.onkeydown = e => { if (e.key === 'Enter'){ const f = sug.querySelector('[data-add]'); if (f){ addSel([f.dataset.add]); q.value = ''; sug.style.display = 'none'; } } if (e.key === 'Escape') sug.style.display = 'none'; };
-q.onblur = () => setTimeout(() => sug.style.display = 'none', 150);
+function pickOne(id){ addSel([id]); q.value = ''; if (SEL.length >= 4) closeSug(); else { const st = sug.scrollTop; suggest(); sug.scrollTop = st; } }
+q.oninput = () => { suggest(); sug.scrollTop = 0; };
+q.onfocus = suggest;
+q.onclick = () => { if (sug.style.display !== 'block') suggest(); };
+q.onkeydown = e => {
+  const ops = [...sug.querySelectorAll('.op')], cur = ops.findIndex(o => o.classList.contains('act'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault(); if (sug.style.display !== 'block'){ suggest(); return; }
+    if (!ops.length) return; const n = Math.max(0, Math.min(ops.length - 1, cur + (e.key === 'ArrowDown' ? 1 : -1)));
+    ops.forEach((o, i) => o.classList.toggle('act', i === n)); ops[n].scrollIntoView({block: 'nearest'});
+  }
+  if (e.key === 'Enter' && cur >= 0){ e.preventDefault(); pickOne(ops[cur].dataset.add); }
+  if (e.key === 'Escape'){ closeSug(); q.blur(); }
+};
+q.onblur = () => setTimeout(closeSug, 120);
 $('addTop').onclick = () => addSel(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('addCheap').onclick = () => addSel(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('clr').onclick = () => { SEL = []; syncHash(); refreshCharts(); };
@@ -623,6 +673,7 @@ document.querySelectorAll('.tog').forEach(w => {
   b.onclick = () => { IND[k] = !IND[k]; b.setAttribute('aria-pressed', IND[k]); w.classList.toggle('on', IND[k]); drawChart(); };
   if (inp) inp.onchange = () => { if (!IND[k]){ IND[k] = true; b.setAttribute('aria-pressed', true); w.classList.add('on'); } drawChart(); };
 });
+document.querySelectorAll('#lower button').forEach(b => b.onclick = () => { document.querySelectorAll('#lower button').forEach(x => x.classList.toggle('on', x === b)); LOWER = b.dataset.l; drawChart(); });
 window.addEventListener('hashchange', () => { if (DATA) route(); });
 let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { if (DATA && VIEW === 'radar'){ $('scatter').innerHTML = scatter(DATA.rows, DATA.N); bindScatter(DATA.rows); } }, 200); });
 load();
