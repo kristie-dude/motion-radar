@@ -98,6 +98,11 @@ h3{font-size:16px;font-weight:700;font-stretch:108%}
 .empty{color:var(--fog);font-family:Caveat,cursive;font-weight:700;font-size:21px;padding:6px 0}
 .rail h3 .tag{margin-left:6px}
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(255,56,119,.16);color:#ff8fb0;vertical-align:2px;white-space:nowrap}
+.tag.nb{background:rgba(0,216,244,.13);color:#7fe9f8;margin-left:6px}
+.lft{font-size:12px;color:var(--fog);white-space:nowrap;margin-left:8px}
+#sug .op.gone .nm,#sug .op.gone .av{opacity:.55}
+#matrix tr.gone td{opacity:.5}
+#matrix tr.gone td.c0{opacity:.8}
 
 /* tables */
 .search{background:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px;min-width:220px}
@@ -216,7 +221,7 @@ footer a{color:var(--fog)}
         <div class="seg sm" id="win" aria-label="Time window"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div>
       <div class="plot" id="scatter"></div>
       <div class="legend" id="slegend"></div>
-      <p class="note">Each dot is a creator. <b>Up</b> means they climbed in the selected window. <b>Right</b> means their average rank over the saved history is low, which likely means fewer stars. The pink corner is where climbing creators are probably still cheap.</p>
+      <p class="note">Each dot is a creator. <b>Up</b> means they climbed in the selected window. <b>Right</b> means their average position over the last 14 days is low, which likely means fewer stars. The pink corner is where climbing creators are probably still cheap. Creators with less than a day on the board are marked New and kept out of it.</p>
     </article>
   <div class="trio">
     <article class="panel rail taped"><span class="tape" aria-hidden="true"></span><h3>Cheap and rising</h3><p class="sub hand pink">cold history, climbing now</p><ol id="l1"></ol></article>
@@ -251,9 +256,9 @@ footer a{color:var(--fog)}
     <div id="legend"></div>
     <div id="tv"></div>
     <div class="key" id="ikey"></div>
-    <p class="note">Rank #1 is at the top, so a rising line means climbing. There's one point every 4 hours. Every indicator is drawn for each creator in that creator's colour, so they work the same with one creator or four.</p>
+    <p class="note">Rank #1 is at the top, so a rising line means climbing. There's one point every 4 hours. Every indicator is drawn for each creator in that creator's colour, so they work the same with one creator or four. The line breaks wherever a creator was off the leaderboard.</p>
     <dl class="defs">
-      <div><dt>Star baseline</dt><dd>Average rank over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest.</dd></div>
+      <div><dt>Star baseline</dt><dd>Average position over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest. It's measured as a share of the board, so it stays fair if the leaderboard grows.</dd></div>
       <div><dt>Trend</dt><dd>The rank line smoothed over the last few updates (6 is one day), so the direction shows through the noise.</dd></div>
       <div><dt>Turns</dt><dd>Arrows where the one-day average crosses the three-day average. Green means the creator started climbing, orange means they started falling.</dd></div>
       <div><dt>Heat</dt><dd>Spots above (+) or below (−) their own 14-day average right now. High heat means hot now while the stars still reflect the past.</dd></div>
@@ -270,9 +275,13 @@ footer a{color:var(--fog)}
         <select class="btn" id="hsort" aria-label="Sort creators"><option value="rank">Sort by current rank</option><option value="climb">Biggest climb since tracking began</option><option value="fall">Biggest fall since tracking began</option><option value="name">Sort by name</option></select>
         <div class="seg sm" id="hmode" aria-label="Cell values"><button data-m="rank" class="on">Ranks</button><button data-m="move">Moves</button></div>
       </div></div>
+    <div class="bar">
+      <div class="grp"><span class="lbl">Columns</span><div class="seg sm" id="hcols" aria-label="How far back"><button data-c="18" class="on">3 days</button><button data-c="84">2 weeks</button><button data-c="0">All</button></div></div>
+      <div class="grp"><span class="tog" id="hleftw"><button id="hleft" aria-pressed="false">Show creators who left</button></span></div>
+    </div>
     <div class="scroll matrix"><table id="matrix"></table></div>
     <div class="key"><span>Fell</span><span class="ramp" id="ramp"></span><span>Climbed</span><span style="margin-left:12px"><i style="font-style:italic">Italic</i> ranks were rebuilt from the next update.</span></div>
-    <p class="note">One column per 4-hour update, newest first, in your local time. Cell color shows the move since the previous update. Switch to <b>Moves</b> to see the change itself.</p>
+    <p class="note">One column per 4-hour update, newest first, in your local time. Cell color shows the move since the previous update. Switch to <b>Moves</b> to see the change itself. A dash means the creator wasn't on the leaderboard at that update.</p>
   </article>
 </section>
 </main>
@@ -298,43 +307,101 @@ const hhmm = t => tfmt(t, {hour: '2-digit', minute: '2-digit'});
 const dayf = t => tfmt(t, {weekday: 'short'}) + ' ' + new Date(t).getDate();
 
 /* ---------- data ---------- */
+/* ---------- data ---------- */
+let IDX = null, ALL_LOADED = false;
+const LOADED = new Set();
+async function getJSON(u){ const r = await fetch(u + '?t=' + Date.now()); if (!r.ok) throw new Error(r.status); return r.json(); }
+function unpack(m){ return m.snapshots.map(s => ({asOf: s.asOf, rows: s.rows.map(([i, pos, d, n]) => [m.ids[i], m.names[i], pos, d, !!n])})); }
+function addSnaps(list){
+  for (const s of list){
+    const k = SNAPS.findIndex(x => x.asOf === s.asOf);
+    if (k < 0) SNAPS.push(s); else if (SNAPS[k].live && !s.live) SNAPS[k] = s;
+  }
+  SNAPS.sort((a, b) => a.asOf < b.asOf ? -1 : 1);
+}
+async function loadMonths(keys){
+  const todo = keys.filter(k => !LOADED.has(k));
+  const got = await Promise.all(todo.map(k => getJSON('data/' + k + '.json').then(unpack).catch(() => null)));
+  todo.forEach((k, i) => { if (got[i]){ LOADED.add(k); addSnaps(got[i]); } });
+  ALL_LOADED = !IDX || Object.keys(IDX.months).every(k => LOADED.has(k));
+}
+let LOADING = null;
+function loadAll(){
+  if (ALL_LOADED || !IDX) return Promise.resolve();
+  if (!LOADING){ toast('Loading older history'); LOADING = loadMonths(Object.keys(IDX.months)).then(() => { LOADING = null; render(); }); }
+  return LOADING;
+}
 async function load(){
-  let h = {snapshots: []};
-  try { h = await (await fetch('data/history.json?t=' + Date.now())).json(); } catch(e) {}
+  try { IDX = await getJSON('data/index.json'); } catch(e) { IDX = null; }
+  if (IDX){
+    const keys = Object.keys(IDX.months).sort(), from = new Date(Date.now() - 35 * 24 * H).toISOString();
+    let want = keys.filter(k => IDX.months[k].last >= from);
+    if (!want.length) want = keys.slice(-1);
+    await loadMonths(want);
+  } else {
+    try { addSnaps((await getJSON('data/history.json')).snapshots); } catch(e) {}
+    ALL_LOADED = true;
+  }
   try {
     const live = await (await fetch('https://leaderboard.motion.game/api/leaderboard')).json();
-    if (live && live.rows && !h.snapshots.some(s => s.asOf === live.asOf))
-      h.snapshots.push({asOf: live.asOf, live: true, rows: live.rows.map(r => [r.id, r.name, r.position, r.delta, !!r.isNew])});
+    if (live && live.rows && !SNAPS.some(s => s.asOf === live.asOf))
+      addSnaps([{asOf: live.asOf, live: true, rows: live.rows.map(r => [r.id, r.name, r.position, r.delta, !!r.isNew])}]);
   } catch(e) {}
-  SNAPS = h.snapshots.sort((a, b) => a.asOf < b.asOf ? -1 : 1);
   if (!SNAPS.length){ $('statusText').textContent = 'No data yet. Check back after the next update.'; return; }
   render(); route();
 }
 
+/* first index in a sorted array whose value is greater than v */
+function upper(a, v){ let lo = 0, hi = a.length; while (lo < hi){ const m = (lo + hi) >> 1; if (a[m] <= v) lo = m + 1; else hi = m; } return lo; }
+
 function build(){
-  const pts = {}, names = {};
+  const pm = {}, names = {}, snapT = [];
   for (const s of SNAPS){
-    const t = Date.parse(s.asOf);
+    const t = Date.parse(s.asOf), n = s.rows.length, k = Math.round(t / H);
+    snapT.push(t);
     for (const [id, name, pos, delta, isNew] of s.rows){
       names[id] = name;
-      const p = pts[id] || (pts[id] = []);
-      const tb = t - 4 * H;
-      if (!isNew && !p.some(q => Math.abs(q.t - tb) < H)) p.push({t: tb, r: pos + delta, d: true});
-      const ex = p.find(q => q.t === t);
-      if (ex){ ex.r = pos; ex.d = false; } else p.push({t, r: pos, d: false});
+      const m = pm[id] || (pm[id] = new Map());
+      if (!isNew && !m.has(k - 4)) m.set(k - 4, {t: t - 4 * H, r: pos + delta, n, d: true});
+      m.set(k, {t, r: pos, n, d: false});
     }
   }
+  const sk = snapT.map(t => Math.round(t / H)), pts = {};
+  for (const id in pm){
+    const p = [...pm[id].values()].sort((a, b) => a.t - b.t);
+    for (let i = 0; i < p.length; i++){
+      const q = p[i];
+      q.f = q.n > 1 ? (q.r - 1) / (q.n - 1) : 0;          // share of the board above them: 0 is the top, 1 the bottom
+      if (i){ const j = upper(sk, Math.round(p[i - 1].t / H)); q.gap = j < sk.length && sk[j] < Math.round(q.t / H); } // off the board in between
+    }
+    pts[id] = p;
+  }
   const last = SNAPS[SNAPS.length - 1], tNow = Date.parse(last.asOf), N = last.rows.length;
+  const from = WIN ? tNow - WIN * H : -Infinity, cut14 = tNow - 14 * 24 * H;
   const rows = last.rows.map(([id, name, pos, delta, isNew]) => {
-    const p = pts[id].sort((a, b) => a.t - b.t);
-    const from = WIN ? tNow - WIN * H : -Infinity;
-    let base = p[0]; for (const q of p) if (q.t <= from) base = q;
-    const recent = p.filter(q => q.t >= tNow - 14 * 24 * H);
-    const avg = recent.reduce((a, q) => a + q.r, 0) / recent.length;
-    return {id, name, rank: pos, ch4: delta, chw: base.r - pos, tot: p[0].r - pos, avg, heat: avg - pos, isNew, p, cheap: avg > N / 2};
+    const p = pts[id];
+    let s0 = 0; for (let i = p.length - 1; i > 0; i--) if (p[i].gap){ s0 = i; break; }
+    const seg = p.slice(s0);
+    let base = seg[0]; for (const q of seg) if (q.t <= from) base = q;
+    const recent = p.filter(q => q.t >= cut14);
+    const avgF = recent.reduce((a, q) => a + q.f, 0) / recent.length;
+    const avg = avgF * (N - 1) + 1;
+    const ix = IDX && IDX.creators[id], seenBefore = s0 > 0 || (ix && Date.parse(ix.f) < seg[0].t - H);
+    const young = seg[0].t > snapT[0] && seg[0].t > tNow - 24 * H;
+    return {id, name, rank: pos, ch4: delta, chw: base.r - pos, tot: seg[0].r - pos, avg, heat: avg - pos, isNew, young, back: young && seenBefore, since: seg[0].t, p, seg, cheap: !young && avgF > 0.5};
   });
-  const times = [...new Set(Object.values(pts).flatMap(p => p.map(q => q.t)))].sort((a, b) => b - a);
-  return {rows, N, tNow, live: !!last.live, pts, names, times, first: times[times.length - 1]};
+  const cur = new Set(last.rows.map(r => r[0])), left = [];
+  for (const id in pts) if (!cur.has(id)){
+    const p = pts[id], lt = p[p.length - 1].t, j = upper(sk, Math.round(lt / H));
+    left.push({id, name: names[id], lastT: lt, lastR: p[p.length - 1].r, goneT: j < sk.length ? snapT[j] : lt, p, seg: p});
+  }
+  if (IDX) for (const id in IDX.creators) if (!cur.has(id) && !pts[id]){
+    const c = IDX.creators[id]; names[id] = c.n;
+    left.push({id, name: c.n, lastT: Date.parse(c.l), goneT: Date.parse(c.l), unloaded: true, p: [], seg: []});
+  }
+  left.sort((a, b) => b.lastT - a.lastT);
+  const all = [...new Set(Object.values(pts).flatMap(p => p.map(q => q.t)))].sort((a, b) => b - a);
+  return {rows, left, N, tNow, live: !!last.live, pts, names, times: all, colsAsc: all.map(t => Math.floor(t / 1000)).reverse(), first: all[all.length - 1]};
 }
 
 /* ---------- shared bits ---------- */
@@ -356,13 +423,14 @@ function avatar(n, size = 28, move = null){
 }
 const winLabel = () => WIN ? (WIN === 72 ? '3 days' : WIN + 'h') : 'all saved';
 const tip = $('tip');
+function badge(r){ return r.back ? ' <span class="tag nb">Back</span>' : r.young ? ' <span class="tag nb">New</span>' : ''; }
 function moveTxt(d){ return d === 0 ? '<b style="color:#8e9bb8">No move</b>' : '<b class="mv ' + cls(d) + '" style="font-size:15px">' + fmt(d) + '</b>'; }
 function creatorCard(r){
-  return '<div class="tc-h">' + avatar(r.name, 40, r.chw) + '<div style="min-width:0"><div class="tc-n">' + esc(r.name) + '</div><div class="tc-s">' + (r.cheap && r.chw >= 2 ? '<span class="tag">Cheap and rising</span>' : r.cheap ? 'Cold recent history' : 'Hot recent history') + '</div></div>' +
+  return '<div class="tc-h">' + avatar(r.name, 40, r.chw) + '<div style="min-width:0"><div class="tc-n">' + esc(r.name) + '</div><div class="tc-s">' + (r.young ? (r.back ? 'Back on the board since ' : 'New on the board since ') + dayf(r.since) + ', ' + hhmm(r.since) : r.cheap && r.chw >= 2 ? '<span class="tag">Cheap and rising</span>' : r.cheap ? 'Cold recent history' : 'Hot recent history') + '</div></div>' +
     '<div class="tc-r"><b>#' + r.rank + '</b><small>of ' + DATA.N + '</small></div></div>' +
     '<div class="tc-g"><div><small>Move, ' + winLabel() + '</small>' + moveTxt(r.chw) + '</div><div><small>Last 4h</small>' + moveTxt(r.ch4) + '</div>' +
     '<div><small>Avg rank</small><b>' + r.avg.toFixed(1) + '</b></div><div><small>Heat</small><b>' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</b></div></div>' +
-    '<div class="tc-sp"><small>Rank, last 3 days</small>' + (spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N, 236, 34) || '<div class="tc-s">Not enough history yet</div>') + '</div>' +
+    '<div class="tc-sp"><small>Rank, last 3 days</small>' + (spark(r.seg.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N, 236, 34) || '<div class="tc-s">Not enough history yet</div>') + '</div>' +
     '<div class="tc-f"><span>Select to open chart</span></div>';
 }
 function showTip(e, html){ tip.innerHTML = html; tip.style.display = 'block';
@@ -392,7 +460,7 @@ function render(){
 }
 
 function list(el, rows, emptyMsg){
-  $(el).innerHTML = rows.length ? rows.map(r => '<li data-open="' + r.id + '" tabindex="0"><span class="rk">#' + r.rank + '</span><span class="who">' + avatar(r.name, 28, r.chw) + '<span class="nm">' + esc(r.name) + '</span></span>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N) + '<span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></li>').join('') : '<li class="empty" style="display:block;cursor:default">' + emptyMsg + '</li>';
+  $(el).innerHTML = rows.length ? rows.map(r => '<li data-open="' + r.id + '" tabindex="0"><span class="rk">#' + r.rank + '</span><span class="who">' + avatar(r.name, 28, r.chw) + '<span class="nm">' + esc(r.name) + '</span>' + badge(r) + '</span>' + spark(r.seg.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N) + '<span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></li>').join('') : '<li class="empty" style="display:block;cursor:default">' + emptyMsg + '</li>';
 }
 
 function scatter(rows, N){
@@ -464,7 +532,7 @@ function table(){
   const q = TQ.trim().toLowerCase();
   const sorted = rows.filter(r => !q || r.name.toLowerCase().includes(q)).sort((a, b) => { const k = SORT.k; const va = k === 'name' ? a.name.toLowerCase() : a[k], vb = k === 'name' ? b.name.toLowerCase() : b[k]; return (va < vb ? -1 : va > vb ? 1 : 0) * SORT.d; });
   let t = '<thead><tr>' + cols.map(c => '<th class="' + (c[2] ? 'num' : '') + '" data-k="' + c[0] + '"' + (SORT.k === c[0] ? ' aria-sort="' + (SORT.d > 0 ? 'ascending' : 'descending') + '"' : '') + '>' + c[1] + (SORT.k === c[0] ? (SORT.d > 0 ? ' ↑' : ' ↓') : '') + '</th>').join('') + '</tr></thead><tbody>';
-  for (const r of sorted) t += '<tr data-open="' + r.id + '" tabindex="0"><td class="num rkc">' + r.rank + '</td><td><span class="who">' + avatar(r.name, 26, r.chw) + '<span class="nm">' + esc(r.name) + '</span></span>' + (r.cheap && r.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</td><td class="num"><span class="mv ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</span></td><td class="num"><span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num">' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</td><td>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), N, 90, 22) + '</td></tr>';
+  for (const r of sorted) t += '<tr data-open="' + r.id + '" tabindex="0"><td class="num rkc">' + r.rank + '</td><td><span class="who">' + avatar(r.name, 26, r.chw) + '<span class="nm">' + esc(r.name) + '</span></span>' + badge(r) + (r.cheap && r.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</td><td class="num"><span class="mv ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</span></td><td class="num"><span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num">' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</td><td>' + spark(r.seg.filter(q => q.t >= DATA.tNow - 72 * H), N, 90, 22) + '</td></tr>';
   if (!sorted.length) t += '<tr><td colspan="7" class="empty" style="padding:16px">No creator matches "' + esc(TQ) + '".</td></tr>';
   $('tbl').innerHTML = t + '</tbody>';
   $('tbl').querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'p') return; SORT = {k, d: SORT.k === k ? -SORT.d : (k === 'name' || k === 'rank' || k === 'avg' ? 1 : -1)}; table(); });
@@ -476,33 +544,42 @@ function tint(d){
   const a = (0.26 + Math.min(Math.abs(d), 12) / 12 * 0.6).toFixed(2);
   return d > 0 ? 'background:rgba(63,214,143,' + a + ')' : 'background:rgba(255,120,73,' + a + ')';
 }
+let HCOLS = 18, HLEFT = false, HTOKEN = 0;
 function matrix(){
-  const {rows, times, pts} = DATA;
-  const q = HQ.trim().toLowerCase();
-  let list = rows.filter(r => !q || r.name.toLowerCase().includes(q));
+  const {rows, left, times, pts} = DATA;
+  const q = HQ.trim().toLowerCase(), hit = r => !q || r.name.toLowerCase().includes(q);
   const sorts = {rank: (a, b) => a.rank - b.rank, climb: (a, b) => b.tot - a.tot || a.rank - b.rank, fall: (a, b) => a.tot - b.tot || a.rank - b.rank, name: (a, b) => a.name.localeCompare(b.name)};
-  list.sort(sorts[HSORT]);
+  const shown = left.filter(r => !r.unloaded);
+  $('hleft').textContent = 'Show creators who left' + (left.length ? ' (' + left.length + ')' : '');
+  let list = rows.filter(hit).sort(sorts[HSORT]);
+  if (HLEFT) list = list.concat(shown.filter(hit).map(r => Object.assign({gone: true}, r)));
+  const cols = times.slice(0, HCOLS || Infinity);
   let lastDay = '';
-  let h = '<thead><tr><th class="c0">Creator</th>' + times.map(t => { const d = dayf(t); const show = d !== lastDay; lastDay = d; return '<th>' + hhmm(t) + '<small>' + (show ? d : '&nbsp;') + '</small></th>'; }).join('') + '</tr></thead><tbody>';
-  for (const r of list){
+  const head = '<thead><tr><th class="c0">Creator</th>' + cols.map(t => { const d = dayf(t); const show = d !== lastDay; lastDay = d; return '<th>' + hhmm(t) + '<small>' + (show ? d : '&nbsp;') + '</small></th>'; }).join('') + '</tr></thead>';
+  const rowHtml = r => {
     const byT = new Map(pts[r.id].map(q => [q.t, q]));
-    h += '<tr><td class="c0" data-open="' + r.id + '"><span class="rk">#' + r.rank + '</span><span class="who">' + avatar(r.name, 22, r.chw) + '<span class="nm">' + esc(r.name) + '</span></span></td>';
-    times.forEach((t, i) => {
+    let h = '<tr' + (r.gone ? ' class="gone"' : '') + '><td class="c0" data-open="' + r.id + '"><span class="rk">' + (r.gone ? '' : '#' + r.rank) + '</span><span class="who">' + avatar(r.name, 22, r.gone ? null : r.chw) + '<span class="nm">' + esc(r.name) + '</span>' + (r.gone ? '<span class="lft">left ' + dayf(r.goneT) + '</span>' : badge(r)) + '</span></td>';
+    cols.forEach((t, i) => {
       const cur = byT.get(t);
       if (!cur){ h += '<td class="cell na">–</td>'; return; }
-      let prev = null; for (let j = i + 1; j < times.length; j++){ prev = byT.get(times[j]); if (prev) break; }
+      let prev = null;
+      if (!cur.gap) for (let j = i + 1; j < times.length; j++){ prev = byT.get(times[j]); if (prev) break; }
       const d = prev ? prev.r - cur.r : 0;
       const val = HMODE === 'rank' ? cur.r : (prev ? (d > 0 ? '+' + d : d < 0 ? '−' + (-d) : '0') : '');
-      h += '<td class="cell' + (cur.d ? ' d' : '') + '" style="' + tint(d) + '" data-id="' + r.id + '" data-t="' + t + '" data-r="' + cur.r + '" data-d="' + (prev ? d : '') + '" data-x="' + (cur.d ? 1 : 0) + '">' + val + '</td>';
+      h += '<td class="cell' + (cur.d ? ' d' : '') + '" style="' + tint(d) + '" data-id="' + r.id + '" data-t="' + t + '" data-r="' + cur.r + '" data-n="' + cur.n + '" data-d="' + (prev ? d : '') + '" data-x="' + (cur.d ? 1 : 0) + '" data-g="' + (cur.gap ? 1 : 0) + '">' + val + '</td>';
     });
-    h += '</tr>';
-  }
-  if (!list.length) h += '<tr><td class="c0 empty" style="padding:16px">No creator matches "' + esc(HQ) + '".</td></tr>';
-  $('matrix').innerHTML = h + '</tbody>';
+    return h + '</tr>';
+  };
+  $('matrix').innerHTML = head + '<tbody></tbody>';
+  const body = $('matrix').tBodies[0], tok = ++HTOKEN;
+  if (!list.length) body.innerHTML = '<tr><td class="c0 empty" style="padding:16px">No creator matches "' + esc(HQ) + '".</td></tr>';
+  let i = 0;
+  const step = () => { if (tok !== HTOKEN) return; let out = ''; for (const end = Math.min(list.length, i + 50); i < end; i++) out += rowHtml(list[i]); body.insertAdjacentHTML('beforeend', out); if (i < list.length) setTimeout(step, 0); };
+  step();
   $('matrix').onmousemove = e => { const c = e.target.closest('td.cell'); if (!c || c.classList.contains('na')){ hideTip(); return; }
     const d = c.dataset.d, n = DATA.names[c.dataset.id];
-    showTip(e, '<div class="tc-h">' + avatar(n, 36, d === '' ? null : +d) + '<div style="min-width:0"><div class="tc-n">' + esc(n) + '</div><div class="tc-s">' + dayf(+c.dataset.t) + ', ' + hhmm(+c.dataset.t) + '</div></div><div class="tc-r"><b>#' + c.dataset.r + '</b><small>of ' + DATA.N + '</small></div></div>' +
-      '<div class="tc-g" style="grid-template-columns:1fr"><div><small>Since the previous update</small>' + (d === '' ? '<b style="color:#8e9bb8">First saved position</b>' : moveTxt(+d)) + '</div></div>' +
+    showTip(e, '<div class="tc-h">' + avatar(n, 36, d === '' ? null : +d) + '<div style="min-width:0"><div class="tc-n">' + esc(n) + '</div><div class="tc-s">' + dayf(+c.dataset.t) + ', ' + hhmm(+c.dataset.t) + '</div></div><div class="tc-r"><b>#' + c.dataset.r + '</b><small>of ' + c.dataset.n + '</small></div></div>' +
+      '<div class="tc-g" style="grid-template-columns:1fr"><div><small>Since the previous update</small>' + (d === '' ? '<b style="color:#8e9bb8">' + (c.dataset.g === '1' ? 'Back on the leaderboard' : 'First saved position') + '</b>' : moveTxt(+d)) + '</div></div>' +
       '<div class="tc-f"><span>' + (c.dataset.x === '1' ? 'Rebuilt from the next update' : 'Saved snapshot') + '</span></div>'); };
   $('matrix').onmouseleave = hideTip;
 }
@@ -523,9 +600,36 @@ function crossings(f, sl){ const slow = new Map(sl.map(p => [p.time, p.value])),
 function sma(d, n){ const o = []; let s = 0; for (let i = 0; i < d.length; i++){ s += d[i].value; if (i >= n) s -= d[i - n].value; if (i >= n - 1) o.push({time: d[i].time, value: s / n}); } return o; }
 function ema(d, n){ const o = [], k = 2 / (n + 1); let e = null; for (const p of d){ e = e === null ? p.value : p.value * k + e * (1 - k); o.push({time: p.time, value: e}); } return o; }
 function change24(d){ const o = []; let j = 0; for (let i = 0; i < d.length; i++){ while (j + 1 < i && d[j + 1].time <= d[i].time - 86400 + 900) j++; if (d[j].time <= d[i].time - 86400 + 900) o.push({time: d[i].time, value: d[j].value - d[i].value}); } return o; }
-function heatData(d){ const b = baseline(d); return d.map((p, i) => ({time: p.time, value: +(b[i].value - p.value).toFixed(1)})); }
 function bands(d, n, m){ const u = [], l = []; for (let i = n - 1; i < d.length; i++){ const w = d.slice(i - n + 1, i + 1).map(p => p.value); const a = w.reduce((x, y) => x + y, 0) / n; const sd = Math.sqrt(w.reduce((x, y) => x + (y - a) * (y - a), 0) / n); u.push({time: d[i].time, value: a + m * sd}); l.push({time: d[i].time, value: a - m * sd}); } return [u, l]; }
-function lineData(id){ const seen = new Set(), o = []; for (const q of DATA.pts[id] || []){ const t = Math.floor(q.t / 1000); if (!seen.has(t)){ seen.add(t); o.push({time: t, value: q.r}); } } return o.sort((a, b) => a.time - b.time); }
+/* a creator's points split wherever they were off the leaderboard */
+function segsOf(id){ const out = []; let cur = null; for (const q of (DATA.pts[id] || [])){ if (!cur || q.gap){ cur = []; out.push(cur); } cur.push({time: Math.floor(q.t / 1000), value: q.r, n: q.n, f: q.f}); } return out; }
+/* glue per-segment series back together, with empty slots where the creator was away so the line breaks and the time stays visible */
+function joinSegs(parts, segs){
+  const o = [];
+  parts.forEach((part, i) => {
+    if (i){ const a = segs[i - 1][segs[i - 1].length - 1].time, b = segs[i][0].time; for (const t of DATA.colsAsc) if (t > a && t < b) o.push({time: t}); }
+    for (const p of part) o.push(p);
+  });
+  return o;
+}
+/* star baseline: average share of the board over 14 days, shown on the board size of each moment */
+function baseSegs(segs){
+  const all = segs.flat(), b = new Map(); let j = 0, sum = 0;
+  for (let i = 0; i < all.length; i++){ sum += all[i].f; while (all[i].time - all[j].time > 14 * 86400){ sum -= all[j].f; j++; } b.set(all[i].time, sum / (i - j + 1)); }
+  return segs.map(seg => seg.map(p => ({time: p.time, value: b.get(p.time) * (p.n - 1) + 1})));
+}
+function addSplit(type, opts, pane, parts, segs){
+  return parts.map((part, i) => {
+    const data = part.slice();
+    if (i < parts.length - 1){ const a = segs[i][segs[i].length - 1].time, b = segs[i + 1][0].time; for (const t of DATA.colsAsc) if (t > a && t < b) data.push({time: t}); }
+    const last = i === parts.length - 1;
+    const sr = TV.addSeries(type, Object.assign({}, opts, last ? {} : {lastValueVisible: false, priceLineVisible: false}), pane);
+    sr.setData(data);
+    return sr;
+  });
+}
+function valAt(list, param){ for (const sr of list){ const v = param.seriesData.get(sr); if (v && v.value != null) return v; } return null; }
+function lineData(id){ return segsOf(id).flat().map(p => ({time: p.time, value: p.value})); }
 const rankFmt = {type: 'custom', minMove: 1, formatter: v => v < 0.5 ? '' : '#' + Math.round(v)};
 const per = id => Math.max(2, +$(id).value || 2);
 
@@ -545,34 +649,32 @@ function drawChart(){
   const thin = {lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: rankFmt};
   const one = SEL.length === 1, sgn = v => (v > 0 ? '+' : '') + (Math.abs(v) < 10 && v % 1 ? v.toFixed(1) : Math.round(v));
   const lowFmt = {type: 'custom', minMove: 0.1, formatter: sgn};
+  const plain = a => a.map(p => ({time: p.time, value: p.value}));
+  const current = new Set(DATA.rows.map(r => r.id));
   let lowFirst = null, crossShort = 0, crossCount = 0;
   SEL.forEach((id, i) => {
-    const col = SERIES[i], name = DATA.names[id];
-    const d = lineData(id);
-    const s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 30, pointMarkersRadius: 3, lastPriceAnimation: 0}, 0);
-    s.setData(d);
-    MAIN.push({s, name, col, d, id});
-    if (IND.base) TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: col + 'b3', lineWidth: 2, lineStyle: 3}), 0).setData(baseline(d));
-    if (IND.trend) TV.addSeries(LC.LineSeries, Object.assign({}, thin, {color: col, lineWidth: 1, lineStyle: 1}), 0).setData(ema(d, per('pT')));
+    const col = SERIES[i], name = DATA.names[id], segs = segsOf(id);
+    if (!segs.length) return;
+    const flat = segs.flat(), npts = flat.length;
+    const ss = addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: npts < 30, pointMarkersRadius: 3, lastPriceAnimation: 0}, 0, segs.map(plain), segs);
+    MAIN.push({ss, name, col, d: plain(flat), id, gone: !current.has(id)});
+    const base = baseSegs(segs);
+    if (IND.base) addSplit(LC.LineSeries, Object.assign({}, thin, {color: col + 'b3', lineWidth: 2, lineStyle: 3}), 0, base, segs);
+    if (IND.trend) addSplit(LC.LineSeries, Object.assign({}, thin, {color: col, lineWidth: 1, lineStyle: 1}), 0, segs.map(g => ema(g, per('pT'))), segs);
     if (IND.turns){
-      const fN = per('pF'), sN = Math.max(per('pS'), fN + 1), f = sma(d, fN), sl = sma(d, sN);
-      if (!sl.length) crossShort = sN;
-      const mk = crossings(f, sl).map(k => one ? k : Object.assign(k, {text: ''}));
-      crossCount += mk.length;
-      if (mk.length) LC.createSeriesMarkers(s, mk);
+      const fN = per('pF'), sN = Math.max(per('pS'), fN + 1);
+      let long = false;
+      segs.forEach((g, k) => { const f = sma(g, fN), sl = sma(g, sN); if (sl.length) long = true; const mk = crossings(f, sl); if (!one) mk.forEach(x => x.text = ''); crossCount += mk.length; if (mk.length) LC.createSeriesMarkers(ss[k], mk); });
+      if (!long) crossShort = sN;
     }
-    if (LOWER !== 'off' && d.length > 1){
-      const data = LOWER === 'heat' ? heatData(d) : change24(d);
-      let ls;
-      if (one){
-        ls = TV.addSeries(LC.HistogramSeries, {priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true}, 1);
-        ls.setData(data.map(p => ({time: p.time, value: p.value, color: p.value > 0 ? UP : p.value < 0 ? DOWN : '#5d6a8c'})));
-      } else {
-        ls = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true, crosshairMarkerRadius: 3}, 1);
-        ls.setData(data);
-      }
-      MAIN[MAIN.length - 1].low = ls; MAIN[MAIN.length - 1].lowLast = data[data.length - 1];
-      if (!lowFirst){ lowFirst = ls; ls.priceScale().applyOptions({invertScale: false}); ls.createPriceLine({price: 0, color: '#3a4577', lineWidth: 1, lineStyle: 2, axisLabelVisible: false}); }
+    if (LOWER !== 'off' && npts > 1){
+      const parts = LOWER === 'heat' ? base.map((bp, k) => bp.map((b, j) => ({time: b.time, value: +(b.value - segs[k][j].value).toFixed(1)}))) : segs.map(change24);
+      const vals = parts.flat();
+      const ls = one
+        ? addSplit(LC.HistogramSeries, {priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true}, 1, parts.map(pt => pt.map(p => ({time: p.time, value: p.value, color: p.value > 0 ? UP : p.value < 0 ? DOWN : '#5d6a8c'}))), segs)
+        : addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true, crosshairMarkerRadius: 3}, 1, parts, segs);
+      MAIN[MAIN.length - 1].low = ls; MAIN[MAIN.length - 1].lowLast = vals[vals.length - 1];
+      if (!lowFirst){ lowFirst = ls[0]; lowFirst.priceScale().applyOptions({invertScale: false}); lowFirst.createPriceLine({price: 0, color: '#3a4577', lineWidth: 1, lineStyle: 2, axisLabelVisible: false}); }
     }
   });
   if (lowFirst){ const ps = TV.panes(); if (ps.length > 1){ ps[0].setStretchFactor(3); ps[1].setStretchFactor(1.15); } }
@@ -580,10 +682,10 @@ function drawChart(){
   TV.timeScale().fitContent();
   ikey();
   const paint = param => {
-    lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? param.seriesData.get(m.s) : null; if (!v) v = m.d[m.d.length - 1];
+    lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? valAt(m.ss, param) : null; if (!v) v = param && param.time ? null : m.d[m.d.length - 1];
       const val = v ? v.value : null;
-      let lw = ''; if (m.low){ let lv = param && param.seriesData ? param.seriesData.get(m.low) : null; if (!lv) lv = m.lowLast; if (lv && lv.value != null){ const x = lv.value; lw = ' <em class="mv ' + (x > 0 ? 'up' : x < 0 ? 'down' : 'flat') + '" style="font-style:normal;font-size:13px">' + (x > 0 ? '+' : '') + (x % 1 ? x.toFixed(1) : x) + '</em>'; } }
-      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b>' + lw + '</span>'; }).join('');
+      let lw = ''; if (m.low){ let lv = param && param.seriesData ? valAt(m.low, param) : null; if (!lv && !(param && param.time)) lv = m.lowLast; if (lv && lv.value != null){ const x = lv.value; lw = ' <em class="mv ' + (x > 0 ? 'up' : x < 0 ? 'down' : 'flat') + '" style="font-style:normal;font-size:13px">' + (x > 0 ? '+' : '') + (x % 1 ? x.toFixed(1) : x) + '</em>'; } }
+      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b>' + lw + (m.gone ? ' <span class="lft" style="margin-left:2px">left the leaderboard</span>' : '') + '</span>'; }).join('');
   };
   paint(null); TV.subscribeCrosshairMove(paint);
 }
@@ -602,7 +704,7 @@ function chips(){
   document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { SEL = SEL.filter(x => x !== b.dataset.rm); syncHash(); refreshCharts(); });
 }
 function refreshCharts(){ if (!DATA) return; chips(); drawChart(); }
-function addSel(ids){ let full = false; for (const id of ids){ if (!DATA.names[id] || SEL.includes(id)) continue; if (SEL.length >= 4){ full = true; break; } SEL.push(id); } if (full) toast('Charts compare up to 4 creators'); syncHash(); refreshCharts(); }
+function addSel(ids){ if (!ALL_LOADED && ids.some(id => !DATA.pts[id] && DATA.names[id])){ loadAll().then(() => addSel(ids)); return; } let full = false; for (const id of ids){ if (!DATA.pts[id] || SEL.includes(id)) continue; if (SEL.length >= 4){ full = true; break; } SEL.push(id); } if (full) toast('Charts compare up to 4 creators'); syncHash(); refreshCharts(); }
 function syncHash(){ const h = '#charts' + (SEL.length ? '=' + SEL.map(id => encodeURIComponent(DATA.names[id])).join(',') : ''); if (location.hash !== h) history.replaceState(null, '', h); }
 function openChart(ids){ SEL = []; show('charts'); addSel(ids); scrollTo({top: 0, behavior: 'smooth'}); }
 
@@ -622,14 +724,17 @@ function route(){
     const want = h.indexOf('=') > 0 ? h.slice(h.indexOf('=') + 1).split(',') : [];
     const byName = {}; for (const id in DATA.names) byName[DATA.names[id].toLowerCase()] = id;
     const ids = want.map(n => byName[n.trim().toLowerCase()]).filter(Boolean);
-    if (ids.length) SEL = ids.slice(0, 4);
+    if (!ALL_LOADED && ids.some(id => !DATA.pts[id])){ loadAll().then(route); return; }
+    if (ids.length) SEL = ids.filter(id => DATA.pts[id]).slice(0, 4);
     show('charts');
   } else show(h === 'history' ? 'history' : 'radar');
 }
 document.querySelectorAll('.tabs [role=tab]').forEach(b => b.onclick = () => { const v = b.dataset.v; if (v === 'charts') syncHash(); else history.replaceState(null, '', '#' + v); show(v); });
 document.addEventListener('click', e => { const t = e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); });
 document.addEventListener('keydown', e => { if (e.key === 'Enter'){ const t = e.target.closest && e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); } });
-document.querySelectorAll('#win button').forEach(b => b.onclick = () => { document.querySelectorAll('#win button').forEach(x => x.classList.toggle('on', x === b)); WIN = +b.dataset.w; render(); });
+document.querySelectorAll('#win button').forEach(b => b.onclick = async () => { document.querySelectorAll('#win button').forEach(x => x.classList.toggle('on', x === b)); WIN = +b.dataset.w; if (!WIN && !ALL_LOADED) await loadAll(); render(); });
+document.querySelectorAll('#hcols button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hcols button').forEach(x => x.classList.toggle('on', x === b)); HCOLS = +b.dataset.c; if (!HCOLS && !ALL_LOADED) await loadAll(); matrix(); });
+$('hleft').onclick = () => { HLEFT = !HLEFT; $('hleft').setAttribute('aria-pressed', HLEFT); $('hleftw').classList.toggle('on', HLEFT); matrix(); };
 $('tq').oninput = e => { TQ = e.target.value; table(); };
 $('hq').oninput = e => { HQ = e.target.value; matrix(); };
 $('hsort').onchange = e => { HSORT = e.target.value; matrix(); };
@@ -642,8 +747,10 @@ function suggest(){
   const v = q.value.trim().toLowerCase();
   const m = DATA.rows.filter(r => !SEL.includes(r.id) && (!v || r.name.toLowerCase().includes(v))).sort((a, b) => a.rank - b.rank);
   const full = SEL.length >= 4;
-  const head = '<div class="sh">' + (full ? 'Chart is full. Remove a creator to add another.' : v ? m.length + ' match' + (m.length === 1 ? '' : 'es') : 'All creators, by rank') + '</div>';
-  sug.innerHTML = head + (full ? '' : m.map((r, i) => '<div class="op' + (i === 0 ? ' act' : '') + '" role="option" data-add="' + r.id + '"><span class="rk">#' + r.rank + '</span>' + avatar(r.name, 26, r.chw) + '<span class="nm">' + esc(r.name) + '</span><span class="mv ' + cls(r.chw) + '">' + (r.chw ? fmt(r.chw) : '·') + '</span></div>').join('') || '<div class="none">No creator matches that name</div>');
+  const head = '<div class="sh">' + (full ? 'Chart is full. Remove a creator to add another.' : v ? m.length + ' on the leaderboard' : 'On the leaderboard, by rank') + '</div>';
+  const gone = full ? [] : DATA.left.filter(r => !SEL.includes(r.id) && (!v || r.name.toLowerCase().includes(v)));
+  sug.innerHTML = head + (full ? '' : (m.map((r, i) => '<div class="op' + (i === 0 ? ' act' : '') + '" role="option" data-add="' + r.id + '"><span class="rk">#' + r.rank + '</span>' + avatar(r.name, 26, r.chw) + '<span class="nm">' + esc(r.name) + badge(r) + '</span><span class="mv ' + cls(r.chw) + '">' + (r.chw ? fmt(r.chw) : '·') + '</span></div>').join('') +
+    (gone.length ? '<div class="sh">Left the leaderboard</div>' + gone.map((r, i) => '<div class="op gone' + (!m.length && i === 0 ? ' act' : '') + '" role="option" data-add="' + r.id + '"><span class="rk"></span>' + avatar(r.name, 26) + '<span class="nm">' + esc(r.name) + '</span><span class="lft">left ' + dayf(r.goneT) + '</span></div>').join('') : '')) || '<div class="none">No creator matches that name</div>');
   sug.style.display = 'block'; q.setAttribute('aria-expanded', 'true');
   sug.querySelectorAll('[data-add]').forEach(d => {
     d.onmousedown = e => { e.preventDefault(); pickOne(d.dataset.add); };
@@ -668,7 +775,7 @@ q.onblur = () => setTimeout(closeSug, 120);
 $('addTop').onclick = () => addSel(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('addCheap').onclick = () => addSel(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('clr').onclick = () => { SEL = []; syncHash(); refreshCharts(); };
-document.querySelectorAll('.tog').forEach(w => {
+document.querySelectorAll('.tog[data-ind]').forEach(w => {
   const k = w.dataset.ind, b = w.querySelector('button'), inp = w.querySelector('input');
   b.onclick = () => { IND[k] = !IND[k]; b.setAttribute('aria-pressed', IND[k]); w.classList.toggle('on', IND[k]); drawChart(); };
   if (inp) inp.onchange = () => { if (!IND[k]){ IND[k] = true; b.setAttribute('aria-pressed', true); w.classList.add('on'); } drawChart(); };
