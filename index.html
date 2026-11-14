@@ -75,7 +75,7 @@ h3{font-size:16px;font-weight:700;font-stretch:108%}
 /* rail lists */
 .rail section+section{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
 .rail ol{list-style:none;margin-top:10px}
-.rail li{display:grid;grid-template-columns:40px 1fr auto 56px;align-items:center;gap:10px;padding:7px 8px;margin:0 -8px;border-radius:var(--r-sm);cursor:pointer}
+.rail li{display:grid;grid-template-columns:36px minmax(0,1fr) auto 52px;align-items:center;gap:10px;padding:7px 8px;margin:0 -8px;border-radius:var(--r-sm);cursor:pointer}
 .rail li:hover{background:var(--raise)}
 .rk{color:var(--fog);font-variant-numeric:tabular-nums;font-stretch:88%;font-size:14px}
 .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -110,10 +110,11 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 .matrix th,.matrix td{padding:0}
 .matrix thead th{text-align:center;padding:8px 4px;min-width:58px;line-height:1.2;cursor:default}
 .matrix thead th small{display:block;color:var(--dim);font-size:11px;font-weight:500}
-.matrix thead th.c0{text-align:left;padding-left:14px;min-width:210px}
+.matrix thead th.c0{text-align:left;padding-left:14px;min-width:240px}
 .matrix .c0{position:sticky;left:0;z-index:1;background:#0b1029;border-right:1px solid var(--line)}
 .matrix thead .c0{z-index:3;background:#0d1433}
-.matrix td.c0{padding:6px 14px}
+.matrix td.c0{padding:5px 14px}
+.matrix td.c0 .nm{max-width:150px;display:inline-block;vertical-align:middle}
 .matrix td.c0 .rk{display:inline-block;width:38px}
 .matrix td.cell{text-align:center;font-stretch:88%;font-size:13px;height:32px;border-bottom:1px solid var(--line-soft);border-right:1px solid rgba(5,8,18,.6)}
 .matrix td.cell.d{color:var(--fog);font-style:italic}
@@ -149,8 +150,22 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 @media(max-width:700px){.matrix thead th.c0{min-width:150px}.matrix td.c0 .rk{width:32px}#tv{height:400px}.wrap{padding:20px 16px 48px}.tabs{margin:22px -16px 0;padding:10px 16px}.panel{padding:16px}}
 .blank{display:grid;place-items:center;text-align:center;height:100%;color:var(--fog);font-size:15px;border:1px dashed var(--line);border-radius:var(--r-md);padding:24px}
 
-#tip{position:fixed;pointer-events:none;z-index:50;background:#0d1433;border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;font-size:13px;line-height:1.5;display:none;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:260px}
-#tip b{font-weight:700}
+.av{display:inline-grid;place-items:center;flex:none;border-radius:50%;font-weight:750;font-stretch:96%;color:#e6eaf7;letter-spacing:.02em;line-height:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.who{display:inline-flex;align-items:center;gap:10px;min-width:0;vertical-align:middle}
+#tip{position:fixed;pointer-events:none;z-index:50;width:264px;background:#0d1433;border:1px solid #26305e;border-radius:14px;font-size:13px;line-height:1.4;display:none;box-shadow:0 18px 40px rgba(0,0,0,.55);overflow:hidden}
+.tc-h{display:flex;align-items:center;gap:12px;padding:14px 14px 12px}
+.tc-n{font-weight:700;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-s{color:var(--fog);font-size:12.5px;margin-top:2px}
+.tc-r{margin-left:auto;text-align:right}
+.tc-r b{display:block;font-size:20px;font-weight:800;font-stretch:112%;font-variant-numeric:tabular-nums;line-height:1}
+.tc-r small{color:var(--dim);font-size:11px}
+.tc-g{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+.tc-g div{background:#0d1433;padding:9px 14px}
+.tc-g small{display:block;color:var(--fog);font-size:11.5px}
+.tc-g b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.tc-sp{padding:10px 14px 4px}
+.tc-sp small{color:var(--dim);font-size:11px}
+.tc-f{padding:8px 14px 11px;color:var(--dim);font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--ink);font-weight:650;padding:10px 18px;border-radius:999px;font-size:14px;display:none;z-index:60}
 footer{color:var(--dim);font-size:13px;margin-top:34px;max-width:90ch;line-height:1.6}
 footer a{color:var(--fog)}
@@ -205,8 +220,6 @@ footer a{color:var(--fog)}
       </div></div>
     <div class="chips" id="chips"></div>
     <div class="bar">
-      <div class="grp"><span class="lbl">Chart</span><div class="seg sm" id="ctype"><button data-ct="line" class="on">Line</button><button data-ct="candle">Candles</button></div></div>
-      <div class="grp" id="csize"><span class="lbl">Candle</span><div class="seg sm"><button data-cs="12">12h</button><button data-cs="24" class="on">1 day</button></div></div>
       <div class="grp"><span class="lbl">Indicators</span>
         <span class="tog on" data-ind="sma"><button aria-pressed="true">SMA</button><input id="pSMA" type="number" value="6" min="2" max="90" aria-label="SMA period"></span>
         <span class="tog" data-ind="ema"><button aria-pressed="false">EMA</button><input id="pEMA" type="number" value="12" min="2" max="90" aria-label="EMA period"></span>
@@ -216,7 +229,7 @@ footer a{color:var(--fog)}
     </div>
     <div id="legend"></div>
     <div id="tv"></div>
-    <p class="note">Rank #1 is at the top, so a rising line means climbing. One point every 4 hours, so <b>SMA 6</b> averages the last 24 hours. <b>Candles</b> group a period into its opening, closing, best and worst rank; green means the creator ended the period higher. <b>Momentum</b> shows spots gained or lost at each update for the first creator. Compare up to 4 creators.</p>
+    <p class="note">Rank #1 is at the top, so a rising line means climbing. One point every 4 hours, so <b>SMA 6</b> averages the last 24 hours. <b>Momentum</b> shows spots gained or lost at each update for the first creator. Compare up to 4 creators.</p>
   </article>
 </section>
 
@@ -305,7 +318,20 @@ function spark(p, N, w = 56, h = 18){
   const up = p[0].r - p[p.length - 1].r, col = up > 0 ? UP : up < 0 ? DOWN : FOG;
   return '<svg width="' + w + '" height="' + h + '" aria-hidden="true"><polyline fill="none" stroke="' + col + '" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" points="' + xy.map(a => a.join(',')).join(' ') + '"/></svg>';
 }
+const AVBG = ['#24306a', '#3b2a66', '#173f55', '#4a2547', '#1f4638', '#4a3a22', '#2c2f4f', '#163a63'];
+function initials(n){ const w = n.replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).filter(Boolean); if (!w.length) return '?'; return (w.length > 1 ? w[0][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase(); }
+function avatar(n, size = 28){ let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) >>> 0; return '<span class="av" aria-hidden="true" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * .38) + 'px;background:' + AVBG[h % AVBG.length] + '">' + esc(initials(n)) + '</span>'; }
+const winLabel = () => WIN ? (WIN === 72 ? '3 days' : WIN + 'h') : 'all saved';
 const tip = $('tip');
+function moveTxt(d){ return d === 0 ? '<b style="color:#8e9bb8">No move</b>' : '<b class="mv ' + cls(d) + '" style="font-size:15px">' + fmt(d) + '</b>'; }
+function creatorCard(r){
+  return '<div class="tc-h">' + avatar(r.name, 40) + '<div style="min-width:0"><div class="tc-n">' + esc(r.name) + '</div><div class="tc-s">' + (r.cheap && r.chw >= 2 ? '<span class="tag">Cheap and rising</span>' : r.cheap ? 'Cold recent history' : 'Hot recent history') + '</div></div>' +
+    '<div class="tc-r"><b>#' + r.rank + '</b><small>of ' + DATA.N + '</small></div></div>' +
+    '<div class="tc-g"><div><small>Move, ' + winLabel() + '</small>' + moveTxt(r.chw) + '</div><div><small>Last 4h</small>' + moveTxt(r.ch4) + '</div>' +
+    '<div><small>Avg rank</small><b>' + r.avg.toFixed(1) + '</b></div><div><small>Heat</small><b>' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</b></div></div>' +
+    '<div class="tc-sp"><small>Rank, last 3 days</small>' + (spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N, 236, 34) || '<div class="tc-s">Not enough history yet</div>') + '</div>' +
+    '<div class="tc-f"><span>Select to open chart</span></div>';
+}
 function showTip(e, html){ tip.innerHTML = html; tip.style.display = 'block';
   const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 10), y = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 10);
   tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
@@ -332,7 +358,7 @@ function render(){
 }
 
 function list(el, rows, emptyMsg){
-  $(el).innerHTML = rows.length ? rows.map(r => '<li data-open="' + r.id + '" tabindex="0"><span class="rk">#' + r.rank + '</span><span class="nm">' + esc(r.name) + '</span>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N) + '<span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></li>').join('') : '<li class="empty" style="display:block;cursor:default">' + emptyMsg + '</li>';
+  $(el).innerHTML = rows.length ? rows.map(r => '<li data-open="' + r.id + '" tabindex="0"><span class="rk">#' + r.rank + '</span><span class="who">' + avatar(r.name, 26) + '<span class="nm">' + esc(r.name) + '</span></span>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), DATA.N) + '<span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></li>').join('') : '<li class="empty" style="display:block;cursor:default">' + emptyMsg + '</li>';
 }
 
 function scatter(rows, N){
@@ -378,7 +404,7 @@ function bindScatter(rows){
   const byId = Object.fromEntries(rows.map(r => [r.id, r]));
   document.querySelectorAll('#scatter .hit').forEach(g => {
     const r = byId[g.dataset.id];
-    g.onmousemove = e => showTip(e, '<b>' + esc(r.name) + '</b><br>Rank #' + r.rank + ', ' + (r.chw === 0 ? 'no move' : (r.chw > 0 ? 'up ' : 'down ') + Math.abs(r.chw)) + (WIN ? ' in ' + (WIN === 72 ? '3 days' : WIN + 'h') : ' since tracking began') + '<br>Average rank ' + r.avg.toFixed(1) + (r.cheap && r.chw >= 2 ? '<br><span class="tag">Cheap and rising</span>' : '') + '<br><span style="color:#8e9bb8">Select to open chart</span>');
+    g.onmousemove = e => showTip(e, creatorCard(r));
     g.onmouseleave = hideTip;
     g.onclick = () => { hideTip(); openChart([r.id]); };
   });
@@ -390,7 +416,7 @@ function table(){
   const q = TQ.trim().toLowerCase();
   const sorted = rows.filter(r => !q || r.name.toLowerCase().includes(q)).sort((a, b) => { const k = SORT.k; const va = k === 'name' ? a.name.toLowerCase() : a[k], vb = k === 'name' ? b.name.toLowerCase() : b[k]; return (va < vb ? -1 : va > vb ? 1 : 0) * SORT.d; });
   let t = '<thead><tr>' + cols.map(c => '<th class="' + (c[2] ? 'num' : '') + '" data-k="' + c[0] + '"' + (SORT.k === c[0] ? ' aria-sort="' + (SORT.d > 0 ? 'ascending' : 'descending') + '"' : '') + '>' + c[1] + (SORT.k === c[0] ? (SORT.d > 0 ? ' ↑' : ' ↓') : '') + '</th>').join('') + '</tr></thead><tbody>';
-  for (const r of sorted) t += '<tr data-open="' + r.id + '" tabindex="0"><td class="num rkc">' + r.rank + '</td><td><span class="nm">' + esc(r.name) + '</span>' + (r.cheap && r.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</td><td class="num"><span class="mv ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</span></td><td class="num"><span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num">' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</td><td>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), N, 90, 22) + '</td></tr>';
+  for (const r of sorted) t += '<tr data-open="' + r.id + '" tabindex="0"><td class="num rkc">' + r.rank + '</td><td><span class="who">' + avatar(r.name, 26) + '<span class="nm">' + esc(r.name) + '</span></span>' + (r.cheap && r.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</td><td class="num"><span class="mv ' + cls(r.ch4) + '">' + fmt(r.ch4) + '</span></td><td class="num"><span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span></td><td class="num">' + r.avg.toFixed(1) + '</td><td class="num">' + (Math.abs(r.heat) < 0.05 ? '0.0' : (r.heat > 0 ? '+' : '') + r.heat.toFixed(1)) + '</td><td>' + spark(r.p.filter(q => q.t >= DATA.tNow - 72 * H), N, 90, 22) + '</td></tr>';
   if (!sorted.length) t += '<tr><td colspan="7" class="empty" style="padding:16px">No creator matches "' + esc(TQ) + '".</td></tr>';
   $('tbl').innerHTML = t + '</tbody>';
   $('tbl').querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; if (k === 'p') return; SORT = {k, d: SORT.k === k ? -SORT.d : (k === 'name' || k === 'rank' || k === 'avg' ? 1 : -1)}; table(); });
@@ -412,7 +438,7 @@ function matrix(){
   let h = '<thead><tr><th class="c0">Creator</th>' + times.map(t => { const d = dayf(t); const show = d !== lastDay; lastDay = d; return '<th>' + hhmm(t) + '<small>' + (show ? d : '&nbsp;') + '</small></th>'; }).join('') + '</tr></thead><tbody>';
   for (const r of list){
     const byT = new Map(pts[r.id].map(q => [q.t, q]));
-    h += '<tr><td class="c0" data-open="' + r.id + '"><span class="rk">#' + r.rank + '</span><span class="nm">' + esc(r.name) + '</span></td>';
+    h += '<tr><td class="c0" data-open="' + r.id + '"><span class="rk">#' + r.rank + '</span><span class="who">' + avatar(r.name, 22) + '<span class="nm">' + esc(r.name) + '</span></span></td>';
     times.forEach((t, i) => {
       const cur = byT.get(t);
       if (!cur){ h += '<td class="cell na">–</td>'; return; }
@@ -427,7 +453,9 @@ function matrix(){
   $('matrix').innerHTML = h + '</tbody>';
   $('matrix').onmousemove = e => { const c = e.target.closest('td.cell'); if (!c || c.classList.contains('na')){ hideTip(); return; }
     const d = c.dataset.d, n = DATA.names[c.dataset.id];
-    showTip(e, '<b>' + esc(n) + '</b><br>' + dayf(+c.dataset.t) + ', ' + hhmm(+c.dataset.t) + ': rank #' + c.dataset.r + (d === '' ? '<br>First saved position' : '<br>' + (+d === 0 ? 'No move' : (+d > 0 ? 'Up ' : 'Down ') + Math.abs(d)) + ' since the previous update') + (c.dataset.x === '1' ? '<br><span style="color:#8e9bb8">Rebuilt from the next update</span>' : '')); };
+    showTip(e, '<div class="tc-h">' + avatar(n, 36) + '<div style="min-width:0"><div class="tc-n">' + esc(n) + '</div><div class="tc-s">' + dayf(+c.dataset.t) + ', ' + hhmm(+c.dataset.t) + '</div></div><div class="tc-r"><b>#' + c.dataset.r + '</b><small>of ' + DATA.N + '</small></div></div>' +
+      '<div class="tc-g" style="grid-template-columns:1fr"><div><small>Since the previous update</small>' + (d === '' ? '<b style="color:#8e9bb8">First saved position</b>' : moveTxt(+d)) + '</div></div>' +
+      '<div class="tc-f"><span>' + (c.dataset.x === '1' ? 'Rebuilt from the next update' : 'Saved snapshot') + '</span></div>'); };
   $('matrix').onmouseleave = hideTip;
 }
 $('ramp').innerHTML = [-12, -6, -2, 0, 2, 6, 12].map(d => '<i style="' + (tint(d) || 'background:#0b1029') + '"></i>').join('');
@@ -444,28 +472,18 @@ function csv(){
 }
 
 /* ---------- charts view ---------- */
-let SEL = [], CT = 'line', CS = 24, TV = null, MAIN = [];
+let SEL = [], TV = null, MAIN = [];
 const IND = {sma: true, ema: false, bb: false, mom: true};
 function sma(d, n){ const o = []; let s = 0; for (let i = 0; i < d.length; i++){ s += d[i].value; if (i >= n) s -= d[i - n].value; if (i >= n - 1) o.push({time: d[i].time, value: s / n}); } return o; }
 function ema(d, n){ const o = [], k = 2 / (n + 1); let e = null; for (const p of d){ e = e === null ? p.value : p.value * k + e * (1 - k); o.push({time: p.time, value: e}); } return o; }
 function bands(d, n, m){ const u = [], l = []; for (let i = n - 1; i < d.length; i++){ const w = d.slice(i - n + 1, i + 1).map(p => p.value); const a = w.reduce((x, y) => x + y, 0) / n; const sd = Math.sqrt(w.reduce((x, y) => x + (y - a) * (y - a), 0) / n); u.push({time: d[i].time, value: a + m * sd}); l.push({time: d[i].time, value: a - m * sd}); } return [u, l]; }
 function lineData(id){ const seen = new Set(), o = []; for (const q of DATA.pts[id] || []){ const t = Math.floor(q.t / 1000); if (!seen.has(t)){ seen.add(t); o.push({time: t, value: q.r}); } } return o.sort((a, b) => a.time - b.time); }
-function candleData(d, hrs){ const o = [], size = hrs * 3600; let cur = null;
-  for (const p of d){ const b = Math.floor(p.time / size) * size;
-    if (!cur || cur.time !== b){ cur = {time: b, open: p.value, high: p.value, low: p.value, close: p.value}; o.push(cur); }
-    else { cur.close = p.value; cur.high = Math.max(cur.high, p.value); cur.low = Math.min(cur.low, p.value); } }
-  return o; }
 const rankFmt = {type: 'custom', minMove: 1, formatter: v => v < 0.5 ? '' : '#' + Math.round(v)};
 const per = id => Math.max(2, +$(id).value || 2);
 
 function drawChart(){
   const el = $('tv'), lg = $('legend');
   if (TV){ TV.remove(); TV = null; } MAIN = []; el.innerHTML = ''; lg.innerHTML = '';
-  const candleBtn = document.querySelector('[data-ct="candle"]');
-  candleBtn.disabled = SEL.length !== 1; candleBtn.title = SEL.length !== 1 ? 'Candles work with one creator' : '';
-  if (SEL.length !== 1) CT = 'line';
-  document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === CT));
-  $('csize').style.display = CT === 'candle' ? '' : 'none';
   if (!window.LightweightCharts){ el.innerHTML = '<div class="blank">The chart library didn\'t load. Check your connection, then reload the page.</div>'; return; }
   if (!DATA || !SEL.length){ el.innerHTML = '<div class="blank">Add a creator to see their rank over time.<br>You can also select any name on the Radar.</div>'; return; }
   const LC = window.LightweightCharts;
@@ -478,15 +496,9 @@ function drawChart(){
   const thin = {lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat: rankFmt};
   SEL.forEach((id, i) => {
     const col = SERIES[i], name = DATA.names[id];
-    let d = lineData(id), s;
-    if (CT === 'candle'){
-      const c = candleData(d, CS);
-      s = TV.addSeries(LC.CandlestickSeries, {upColor: DOWN, downColor: UP, borderUpColor: DOWN, borderDownColor: UP, wickUpColor: DOWN, wickDownColor: UP, priceFormat: rankFmt, title: name}, 0);
-      s.setData(c); d = c.map(x => ({time: x.time, value: x.close}));
-    } else {
-      s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 30, pointMarkersRadius: 3, title: name, lastPriceAnimation: 0}, 0);
-      s.setData(d);
-    }
+    const d = lineData(id);
+    const s = TV.addSeries(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: d.length < 30, pointMarkersRadius: 3, title: name, lastPriceAnimation: 0}, 0);
+    s.setData(d);
     MAIN.push({s, name, col, d});
     if (IND.sma) TV.addSeries(LC.LineSeries, Object.assign({color: col, lineStyle: 2}, thin), 0).setData(sma(d, per('pSMA')));
     if (IND.ema) TV.addSeries(LC.LineSeries, Object.assign({color: col, lineStyle: 1}, thin), 0).setData(ema(d, per('pEMA')));
@@ -503,8 +515,8 @@ function drawChart(){
   TV.timeScale().fitContent();
   const paint = param => {
     lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? param.seriesData.get(m.s) : null; if (!v) v = m.d[m.d.length - 1];
-      const val = v ? (v.close !== undefined ? v.close : v.value) : null;
-      return '<span><i style="background:' + (CT === 'candle' ? '#eef1fa' : m.col) + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b></span>'; }).join('');
+      const val = v ? v.value : null;
+      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b></span>'; }).join('');
   };
   paint(null); TV.subscribeCrosshairMove(paint);
 }
@@ -562,8 +574,6 @@ q.onblur = () => setTimeout(() => sug.style.display = 'none', 150);
 $('addTop').onclick = () => addSel(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('addCheap').onclick = () => addSel(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
 $('clr').onclick = () => { SEL = []; syncHash(); refreshCharts(); };
-document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { if (b.disabled) return; CT = b.dataset.ct; drawChart(); });
-document.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { CS = +b.dataset.cs; document.querySelectorAll('[data-cs]').forEach(x => x.classList.toggle('on', x === b)); drawChart(); });
 document.querySelectorAll('.tog').forEach(w => {
   const k = w.dataset.ind, b = w.querySelector('button'), inp = w.querySelector('input');
   b.onclick = () => { IND[k] = !IND[k]; b.setAttribute('aria-pressed', IND[k]); w.classList.toggle('on', IND[k]); drawChart(); };
