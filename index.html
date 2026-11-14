@@ -86,6 +86,14 @@ h3{font-size:16px;font-weight:700;font-stretch:108%}
 #scatter .hit .dot{transition:transform .12s}
 #scatter .hit:hover .dot,#scatter .hit:focus-visible .dot{transform:scale(1.7)}
 #scatter text{font-family:Archivo,sans-serif}
+.rtime{font-size:14px;font-weight:650;color:var(--cyan);font-variant-numeric:tabular-nums;min-width:0}
+#replay.on{border-color:var(--cyan);color:var(--text);background:rgba(0,216,244,.1)}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.fade-in{animation:fadein .5s ease-out both}
+#matrix tr.moving{position:relative;z-index:2;background:#0b1029;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+@keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+#tv.reveal>div{animation:reveal .9s cubic-bezier(.3,.7,.2,1) both}
+@media(prefers-reduced-motion:reduce){#tv.reveal>div{animation:none}.fade-in{animation:none}}
 @keyframes dotin{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.sweep{display:none}.dot-in{animation:none}.sticker b i{animation:none}}
 
@@ -225,7 +233,8 @@ footer a{color:var(--fog)}
 <section id="v-radar" role="tabpanel">
     <article class="panel">
       <div class="head"><h2>Who's moving</h2>
-        <div class="seg sm" id="win" aria-label="Time window"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div>
+        <div class="tools"><span class="rtime" id="rtime" aria-live="polite"></span><button class="btn sm" id="replay" title="Play the last 3 days, one update at a time">Replay 3 days</button>
+        <div class="seg sm" id="win" aria-label="Time window"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div></div>
       <div class="plot" id="scatter"></div>
       <div class="legend" id="slegend"></div>
       <p class="note">Each dot is a creator. Hover a dot to see who it is, or select it to open their chart. <b>Higher</b> means they climbed more places in the selected window. <b>Further right</b> means a lower average rank over the last 14 days, which usually means fewer stars. Creators with less than a day on the board are marked New and kept out of the pink corner.</p>
@@ -366,9 +375,10 @@ async function load(){
 /* first index in a sorted array whose value is greater than v */
 function upper(a, v){ let lo = 0, hi = a.length; while (lo < hi){ const m = (lo + hi) >> 1; if (a[m] <= v) lo = m + 1; else hi = m; } return lo; }
 
-function build(){
+function build(end){
+  const S = end == null ? SNAPS : SNAPS.slice(0, end + 1);
   const pm = {}, names = {}, snapT = [];
-  for (const s of SNAPS){
+  for (const s of S){
     const t = Date.parse(s.asOf), n = s.rows.length, k = Math.round(t / H);
     snapT.push(t);
     for (const [id, name, pos, delta, isNew] of s.rows){
@@ -388,7 +398,7 @@ function build(){
     }
     pts[id] = p;
   }
-  const last = SNAPS[SNAPS.length - 1], tNow = Date.parse(last.asOf), N = last.rows.length;
+  const last = S[S.length - 1], tNow = Date.parse(last.asOf), N = last.rows.length;
   const from = WIN ? tNow - WIN * H : -Infinity, cut14 = tNow - 14 * 24 * H;
   const rows = last.rows.map(([id, name, pos, delta, isNew]) => {
     const p = pts[id];
@@ -460,9 +470,9 @@ function render(){
   $('stTitle').textContent = fresh ? 'Live' : 'Paused';
   $('statusText').textContent = (fresh ? 'Updated ' : 'Last update ') + dayf(tNow) + ', ' + hhmm(tNow) + '. Next around ' + hhmm(tNow + 4 * H) + '.';
   $('status').title = times.length + ' updates tracked since ' + dayf(DATA.first) + ' ' + hhmm(DATA.first) + (live ? '. Latest one read live from Motion.' : '');
-  $('scatter').innerHTML = scatter(rows, N);
+  if (REPLAY) stopReplay();
+  paintScatter(rows, N);
   $('slegend').innerHTML = [[PINK, 'Cheap and rising'], [UP, 'Climbing'], [DOWN, 'Falling'], [FOG, 'No move']].map(([c, l]) => '<span><i style="background:' + c + '"></i>' + l + '</span>').join('');
-  bindScatter(rows);
   list('l1', rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat).slice(0, 5), 'Nobody fits right now. Try a longer window.');
   list('l2', rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 5), 'No climbers in this window.');
   list('l3', rows.filter(r => !r.cheap && r.chw < 0).sort((a, b) => a.chw - b.chw).slice(0, 5), 'Nobody is cooling off.');
@@ -476,11 +486,11 @@ function list(el, rows, emptyMsg){
 }
 
 function niceStep(span, n){ const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
-function scatter(rows, N){
+function scatter(rows, N, fixedY){
   const cw = $('scatter').clientWidth || 1140, W = Math.max(320, Math.min(1200, cw)), small = W < 560;
   const Hh = small ? Math.round(W * 1.05) : 460, m = {l: small ? 40 : 56, r: 12, t: 12, b: small ? 54 : 58};
   const iw = W - m.l - m.r, ih = Hh - m.t - m.b;
-  const ymax = Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.12;
+  const ymax = fixedY || Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.12;
   const x = v => m.l + (v - 1) / Math.max(N - 1, 1) * iw;
   const y = v => m.t + ih / 2 - v / ymax * ih / 2;
   const T = (tx, ty, t, o) => '<text x="' + tx + '" y="' + ty + '"' + (o || '') + '>' + t + '</text>';
@@ -519,6 +529,51 @@ function scatter(rows, N){
          '<circle class="dot' + (FIRSTPAINT ? ' dot-in' : '') + '" style="transform-origin:' + px + 'px ' + py + 'px;animation-delay:' + delay + 's" cx="' + px + '" cy="' + py + '" r="5" fill="' + col + '" stroke="#0b1029" stroke-width="2"/></g>';
   }
   return s + '</svg>';
+}
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+/* draw the scatter; dots that already existed glide from where they were */
+function paintScatter(rows, N, fixedY, dur){
+  const el = $('scatter'), old = new Map();
+  el.querySelectorAll('.hit').forEach(g => { const c = g.querySelector('.dot'); old.set(g.dataset.id, [+c.getAttribute('cx'), +c.getAttribute('cy')]); });
+  el.innerHTML = scatter(rows, N, fixedY);
+  bindScatter(rows);
+  if (RM.matches || !old.size) return;
+  const moved = [];
+  el.querySelectorAll('.hit').forEach(g => {
+    const c = g.querySelector('.dot'), o = old.get(g.dataset.id);
+    if (!o){ g.classList.add('fade-in'); return; }
+    const dx = o[0] - c.getAttribute('cx'), dy = o[1] - c.getAttribute('cy');
+    if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+    g.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; moved.push(g);
+  });
+  el.getBoundingClientRect();
+  for (const g of moved){ g.style.transition = 'transform ' + (dur || 650) + 'ms cubic-bezier(.25,.8,.25,1)'; g.style.transform = ''; }
+}
+/* replay: step through recent updates so you can watch who has been moving */
+let REPLAY = null;
+function stopReplay(){
+  if (!REPLAY) return;
+  clearTimeout(REPLAY.t); REPLAY = null;
+  $('replay').textContent = 'Replay 3 days'; $('replay').classList.remove('on'); $('rtime').textContent = '';
+  paintScatter(DATA.rows, DATA.N);
+}
+function startReplay(){
+  const end = SNAPS.length - 1, from = Math.max(0, SNAPS.findIndex(s => Date.parse(s.asOf) >= Date.parse(SNAPS[end].asOf) - 72 * H));
+  if (end - from < 1){ toast('Replay needs at least two saved updates'); return; }
+  const frames = []; for (let i = from; i <= end; i++){ const d = build(i); frames.push({rows: d.rows, N: d.N, t: d.tNow}); }
+  const fixedY = Math.max(5, ...frames.flatMap(f => f.rows.map(r => Math.abs(r.chw)))) * 1.12;
+  REPLAY = {k: 0};
+  $('replay').textContent = 'Stop'; $('replay').classList.add('on');
+  const step = () => {
+    if (!REPLAY) return;
+    const f = frames[REPLAY.k];
+    $('rtime').textContent = dayf(f.t) + ', ' + hhmm(f.t) + (REPLAY.k === frames.length - 1 ? ' (now)' : '');
+    paintScatter(f.rows, f.N, fixedY, 800);
+    REPLAY.k++;
+    if (REPLAY.k < frames.length) REPLAY.t = setTimeout(step, 1100);
+    else REPLAY.t = setTimeout(stopReplay, 2200);
+  };
+  step();
 }
 function bindScatter(rows){
   const byId = Object.fromEntries(rows.map(r => [r.id, r]));
@@ -575,12 +630,27 @@ function matrix(){
     });
     return h + '</tr>';
   };
+  const before = new Map();
+  if (!RM.matches && $('matrix').offsetParent) $('matrix').querySelectorAll('tbody tr').forEach(tr => { const c = tr.querySelector('[data-open]'); if (c) before.set(c.dataset.open, tr.getBoundingClientRect().top); });
   $('matrix').innerHTML = head + '<tbody></tbody>';
   const body = $('matrix').tBodies[0], tok = ++HTOKEN;
   if (!list.length) body.innerHTML = '<tr><td class="c0 empty" style="padding:16px">No creator matches "' + esc(HQ) + '".</td></tr>';
   let i = 0;
   const step = () => { if (tok !== HTOKEN) return; let out = ''; for (const end = Math.min(list.length, i + 50); i < end; i++) out += rowHtml(list[i]); body.insertAdjacentHTML('beforeend', out); if (i < list.length) setTimeout(step, 0); };
   step();
+  if (before.size){
+    const vh = innerHeight, moved = [];
+    body.querySelectorAll('tr').forEach(tr => {
+      const c = tr.querySelector('[data-open]'); if (!c) return;
+      const top = tr.getBoundingClientRect().top, o = before.get(c.dataset.open);
+      if (top > vh + 200) return;
+      if (o == null){ tr.classList.add('fade-in'); return; }
+      const dy = Math.max(-vh, Math.min(vh, o - top)); if (Math.abs(dy) < 1) return;
+      tr.style.transform = 'translateY(' + dy + 'px)'; tr.classList.add('moving'); moved.push(tr);
+    });
+    body.getBoundingClientRect();
+    for (const tr of moved){ tr.style.transition = 'transform .55s cubic-bezier(.25,.8,.25,1)'; tr.style.transform = ''; tr.addEventListener('transitionend', () => tr.classList.remove('moving'), {once: true}); }
+  }
   $('matrix').onmousemove = e => { const c = e.target.closest('td.cell'); if (!c || c.classList.contains('na')){ hideTip(); return; }
     const d = c.dataset.d, n = DATA.names[c.dataset.id];
     showTip(e, '<div class="tc-h">' + avatar(n, 36, d === '' ? null : +d) + '<div style="min-width:0"><div class="tc-n">' + esc(n) + '</div><div class="tc-s">' + dayf(+c.dataset.t) + ', ' + hhmm(+c.dataset.t) + '</div></div><div class="tc-r"><b>#' + c.dataset.r + '</b><small>of ' + c.dataset.n + '</small></div></div>' +
@@ -591,7 +661,7 @@ function matrix(){
 $('ramp').innerHTML = [-12, -6, -2, 0, 2, 6, 12].map(d => '<i style="' + (tint(d) || 'background:#0b1029') + '"></i>').join('');
 
 /* ---------- charts view ---------- */
-let SEL = [], TV = null, MAIN = [];
+let SEL = [], TV = null, MAIN = [], LASTSEL = '';
 const IND = {base: false, trend: false, turns: false};
 let LOWER = 'off';
 const OPT = {rankLine: false, dots: true};
@@ -687,6 +757,9 @@ function drawChart(){
   if (lowFirst){ const ps = TV.panes(); if (ps.length > 1){ ps[0].setStretchFactor(3); ps[1].setStretchFactor(1.15); } }
   CROSSINFO = IND.turns ? (crossShort ? 'Turns need ' + crossShort + ' updates of history. They appear as the history grows.' : crossCount ? '' : 'No turns yet in this history.') : '';
   TV.timeScale().fitContent();
+  const key = SEL.join(',');
+  if (key !== LASTSEL && SEL.length){ el.classList.remove('reveal'); void el.offsetWidth; el.classList.add('reveal'); }
+  LASTSEL = key;
   ikey();
   const paint = param => {
     lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? valAt(m.ss, param) : null; if (!v) v = param && param.time ? null : m.d[m.d.length - 1];
@@ -718,6 +791,7 @@ function openChart(ids){ SEL = []; show('charts'); addSel(ids); scrollTo({top: 0
 /* ---------- routing & events ---------- */
 let VIEW = 'radar';
 function show(v){
+  if (v !== 'radar' && REPLAY) stopReplay();
   VIEW = v;
   ['radar', 'charts', 'history'].forEach(k => $('v-' + k).hidden = k !== v);
   document.querySelectorAll('.tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
@@ -794,8 +868,9 @@ $('optLine').onchange = e => { OPT.rankLine = e.target.checked; saveOpt(); drawC
 $('optDots').onchange = e => { OPT.dots = e.target.checked; saveOpt(); drawChart(); };
 $('setb').onclick = e => { e.stopPropagation(); const open = $('setp').hidden; $('setp').hidden = !open; $('setb').setAttribute('aria-expanded', open); };
 document.addEventListener('click', e => { if (!$('setp').hidden && !e.target.closest('.setw')){ $('setp').hidden = true; $('setb').setAttribute('aria-expanded', false); } });
+$('replay').onclick = () => REPLAY ? stopReplay() : startReplay();
 window.addEventListener('hashchange', () => { if (DATA) route(); });
-let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { if (DATA && VIEW === 'radar'){ $('scatter').innerHTML = scatter(DATA.rows, DATA.N); bindScatter(DATA.rows); } }, 200); });
+let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { if (DATA && VIEW === 'radar' && !REPLAY){ $('scatter').innerHTML = scatter(DATA.rows, DATA.N); bindScatter(DATA.rows); } }, 200); });
 load();
 </script>
 </body>
