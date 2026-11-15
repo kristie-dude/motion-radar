@@ -176,9 +176,6 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 .setp[hidden]{display:none}
 .setp label{display:flex;gap:10px;align-items:center;font-size:14px;cursor:pointer;color:var(--text)}
 .setp input{accent-color:#00d8f4;width:16px;height:16px}
-.defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 22px;margin:14px 0 0;font-size:13.5px;line-height:1.5}
-.defs dt{font-weight:700;color:var(--text);margin-bottom:2px}
-.defs dd{margin:0;color:var(--fog)}
 .tog{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:999px;padding:3px;font-size:13px;font-weight:600;color:var(--fog)}
 .tog button{border:0;background:transparent;color:inherit;font-weight:650;padding:3px 9px;border-radius:999px;cursor:pointer}
 .tog.on{border-color:var(--cyan);background:rgba(0,216,244,.08);color:var(--text)}
@@ -248,6 +245,22 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
 .shot-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}
 .shot-act{display:flex;gap:8px;flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.trail{animation:none}dialog#shot[open]{animation:none}}
+/* info buttons and their hover cards */
+.info{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--fog);display:inline-grid;place-items:center;cursor:help;padding:0;margin-left:2px;flex:none;transition:color .12s,border-color .12s,background .12s}
+.info:hover,.info:focus-visible,.info[aria-expanded=true]{color:var(--ink);background:var(--cyan);border-color:var(--cyan)}
+#itip{position:fixed;z-index:55;width:290px;max-width:calc(100vw - 24px);background:#0d1433;border:1px solid #26305e;border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--fog);box-shadow:0 18px 40px rgba(0,0,0,.55);display:none}
+#itip.on{display:block;animation:fadein .14s ease-out}
+#itip b{display:block;color:var(--text);font-size:14px;margin-bottom:3px}
+#itip p{margin:0}
+#itip p+p{margin-top:6px}
+
+/* scrollbars in the site's colours */
+*{scrollbar-width:thin;scrollbar-color:#2c3873 transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-thumb{background:#2c3873;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#3d4c96;background-clip:padding-box}
+@media(prefers-reduced-motion:reduce){#itip.on{animation:none}}
 </style>
 </head>
 <body>
@@ -295,18 +308,18 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
     <div class="head"><h2>Rank charts</h2>
       <div class="tools">
         <div class="pick"><input class="search" id="q" placeholder="Pick or search a creator" autocomplete="off" aria-label="Pick or search a creator to add" aria-controls="sug" aria-expanded="false"><div id="sug" role="listbox"></div></div>
-        <button class="btn" id="addTop">Add top climbers</button><button class="btn" id="addCheap">Add cheap and rising</button><button class="btn" id="clr">Clear</button>
+        <button class="btn" id="addTop" title="Replace the chart with the 3 biggest climbers">Show top climbers</button><button class="btn" id="addCheap" title="Replace the chart with the 3 best cheap and rising creators">Show cheap and rising</button><button class="btn" id="clr">Clear</button>
       </div></div>
     <div class="chips" id="chips"></div>
     <div class="bar">
       <div class="grp"><span class="lbl">On the lines</span>
-        <span class="tog" data-ind="base"><button aria-pressed="false">Star baseline</button></span>
-        <span class="tog" data-ind="trend"><button aria-pressed="false">Trend</button><input id="pT" type="number" value="6" min="2" max="90" aria-label="Trend smoothing, in updates"></span>
-        <span class="tog" data-ind="turns"><button aria-pressed="false">Turns</button><input id="pF" type="number" value="6" min="2" max="90" aria-label="Fast average, in updates"><input id="pS" type="number" value="18" min="3" max="180" aria-label="Slow average, in updates"></span>
-        <span class="tog" data-ind="jumps"><button aria-pressed="false">Big jumps</button><input id="pJ" type="number" value="8" min="2" max="200" aria-label="Smallest jump to mark, in places"></span>
+        <span class="tog" data-ind="base"><button aria-pressed="false">Star baseline</button><button class="info" type="button" data-info="base" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></span>
+        <span class="tog" data-ind="trend"><button aria-pressed="false">Trend</button><input id="pT" type="number" value="6" min="2" max="90" aria-label="Trend smoothing, in updates"><button class="info" type="button" data-info="trend" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></span>
+        <span class="tog" data-ind="turns"><button aria-pressed="false">Turns</button><input id="pF" type="number" value="6" min="2" max="90" aria-label="Fast average, in updates"><input id="pS" type="number" value="18" min="3" max="180" aria-label="Slow average, in updates"><button class="info" type="button" data-info="turns" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></span>
+        <span class="tog" data-ind="jumps"><button aria-pressed="false">Big jumps</button><input id="pJ" type="number" value="8" min="2" max="200" aria-label="Smallest jump to mark, in places"><button class="info" type="button" data-info="jumps" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></span>
       </div>
       <div class="grp"><span class="lbl">Lower panel</span>
-        <div class="seg sm" id="lower" aria-label="Lower panel"><button data-l="heat">Heat</button><button data-l="chg">24h change</button><button data-l="off" class="on">Off</button></div>
+        <div class="seg sm" id="lower" aria-label="Lower panel"><button data-l="heat">Heat</button><button data-l="chg">24h change</button><button data-l="off" class="on">Off</button></div><button class="info" type="button" data-info="lower" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       </div>
       <div class="grp setw"><button class="btn sm" id="saveC" title="Make a picture of this chart to share">Save image</button><button class="btn sm" id="setb" aria-expanded="false" aria-controls="setp">Settings</button>
         <div class="setp" id="setp" hidden>
@@ -318,14 +331,6 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
     <div id="tv"></div>
     <div class="key" id="ikey"></div>
     <p class="note">Rank #1 is at the top, so a rising line means climbing. There's one point every 4 hours. Every indicator is drawn for each creator in that creator's colour, so they work the same with one creator or four. The line breaks wherever a creator was off the leaderboard.</p>
-    <dl class="defs">
-      <div><dt>Star baseline</dt><dd>Average position over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest. It's measured as a share of the board, so it stays fair if the leaderboard grows.</dd></div>
-      <div><dt>Trend</dt><dd>The rank line smoothed over the last few updates (6 is one day), so the direction shows through the noise.</dd></div>
-      <div><dt>Turns</dt><dd>Arrows where the one-day average crosses the three-day average. Green means the creator started climbing, orange means they started falling.</dd></div>
-      <div><dt>Big jumps</dt><dd>A dot wherever a creator moved at least this many places between two updates. Green for a climb, orange for a fall.</dd></div>
-      <div><dt>Heat</dt><dd>Spots above (+) or below (−) their own 14-day average right now. High heat means hot now while the stars still reflect the past.</dd></div>
-      <div><dt>24h change</dt><dd>Spots gained (+) or lost (−) over the previous 24 hours, at every point. Easy to compare between creators.</dd></div>
-    </dl>
   </article>
 </section>
 
@@ -352,6 +357,7 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
 </div>
 <div id="tip" role="tooltip"></div>
 <div id="toast" role="status"></div>
+<div id="itip" role="tooltip"></div>
 <dialog id="shot" aria-label="Share image"><img id="shotImg" alt=""><div class="shot-bar"><span class="sub">1600 × 900 PNG, sized for posts on X</span><span class="shot-act"><button class="btn" id="shotShare" hidden>Share</button><button class="btn" id="shotCopy">Copy image</button><button class="btn pri" id="shotSave">Download PNG</button><button class="btn" id="shotClose">Close</button></span></div></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.3.0/dist/lightweight-charts.standalone.production.js"></script>
@@ -1239,8 +1245,42 @@ q.onkeydown = e => {
   if (e.key === 'Escape'){ closeSug(); q.blur(); }
 };
 q.onblur = () => setTimeout(closeSug, 120);
-$('addTop').onclick = () => addSel(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
-$('addCheap').onclick = () => addSel(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw).slice(0, 3).map(r => r.id));
+/* quick picks replace what's on the chart, so the button always does what it says */
+const winTxt = () => WIN === 4 ? 'the last 4 hours' : WIN === 24 ? 'the last 24 hours' : WIN === 72 ? 'the last 3 days' : 'all saved history';
+function quickPick(list, none){ if (!list.length){ toast(none + ' in ' + winTxt()); return; } SEL = []; addSel(list.slice(0, 3).map(r => r.id)); }
+$('addTop').onclick = () => quickPick(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw), 'Nobody climbed');
+$('addCheap').onclick = () => quickPick(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat), 'Nobody is cheap and rising');
+/* the (i) buttons: hover or focus shows the explanation, a tap pins it open on phones */
+const INFO = {
+  base: ['Star baseline', 'Average position over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest.', 'It is measured as a share of the board, so it stays fair if the leaderboard grows.'],
+  trend: ['Trend', 'The rank line smoothed over the last few updates, so the direction shows through the noise.', 'The number is how many updates to smooth over. 6 is one day.'],
+  turns: ['Turns', 'Arrows where the fast average crosses the slow one. Green means the creator started climbing, orange means they started falling.', 'The two numbers are the fast and slow averages, in updates. 6 and 18 are one day and three days.'],
+  jumps: ['Big jumps', 'A dot wherever a creator moved at least this many places between two updates. Green for a climb, orange for a fall.', 'The number is the smallest move to mark.'],
+  lower: ['Lower panel', '<b style="display:inline;font-size:inherit">Heat</b> is how many spots a creator sits above (+) or below (−) their own 14-day average right now. High heat means hot now while the stars still reflect the past.', '<b style="display:inline;font-size:inherit">24h change</b> is spots gained (+) or lost (−) over the previous 24 hours, at every point. Easy to compare between creators.']
+};
+let ITIP = null;
+function infoShow(b, pin){
+  const [t, ...ps] = INFO[b.dataset.info], el = $('itip');
+  el.innerHTML = '<b>' + t + '</b>' + ps.map(x => '<p>' + x + '</p>').join('');
+  el.classList.add('on');
+  const r = b.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+  let x = Math.min(Math.max(12, r.left + r.width / 2 - w / 2), innerWidth - w - 12), y = r.bottom + 10;
+  if (y + h > innerHeight - 12) y = r.top - h - 10;
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  if (ITIP && ITIP !== b) ITIP.setAttribute('aria-expanded', 'false');
+  ITIP = pin ? b : null; b.setAttribute('aria-expanded', pin ? 'true' : 'false');
+}
+function infoHide(){ $('itip').classList.remove('on'); if (ITIP) ITIP.setAttribute('aria-expanded', 'false'); ITIP = null; }
+document.querySelectorAll('.info').forEach(b => {
+  b.addEventListener('mouseenter', () => { if (!ITIP) infoShow(b); });
+  b.addEventListener('mouseleave', () => { if (!ITIP) infoHide(); });
+  b.addEventListener('focus', () => { if (!ITIP) infoShow(b); });
+  b.addEventListener('blur', () => { if (!ITIP) infoHide(); });
+  b.addEventListener('click', e => { e.stopPropagation(); if (ITIP === b) infoHide(); else infoShow(b, true); });
+});
+document.addEventListener('click', e => { if (ITIP && !e.target.closest('#itip')) infoHide(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') infoHide(); });
+addEventListener('scroll', () => { if ($('itip').classList.contains('on')) infoHide(); }, {passive: true});
 $('clr').onclick = () => { SEL = []; syncHash(); refreshCharts(); };
 document.querySelectorAll('.tog[data-ind]').forEach(w => {
   const k = w.dataset.ind, b = w.querySelector('button'), inp = w.querySelector('input');
