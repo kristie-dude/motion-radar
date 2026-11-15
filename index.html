@@ -210,6 +210,44 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 footer{color:var(--dim);font-size:13px;margin-top:40px;max-width:90ch;line-height:1.6}
 footer .hand{font-size:22px;color:var(--fog);display:block;margin-bottom:6px}
 footer a{color:var(--fog)}
+
+/* radar trails and replay controls */
+.trail{animation:fadein .45s ease-out .2s both}
+.rbar{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:7px 18px 7px 7px;border:1px solid rgba(0,216,244,.35);border-radius:999px;background:rgba(0,216,244,.06)}
+.rbar[hidden]{display:none}
+.rbar input{flex:1;min-width:100px;accent-color:#00d8f4;cursor:pointer}
+.rbar .rtime{min-width:9em;text-align:right}
+.seg button{white-space:nowrap}
+@media(max-width:700px){.rbar{gap:10px;padding-right:12px}.rbar .rtime{min-width:0;font-size:13px}}
+.play{width:34px;height:34px;border-radius:50%;border:0;background:var(--cyan);color:var(--ink);cursor:pointer;display:grid;place-items:center;flex:none}
+.play svg{display:block}
+#legend span{cursor:default}
+
+/* history pins */
+.pinb{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border:0;border-radius:50%;background:transparent;color:var(--dim);cursor:pointer;display:grid;place-items:center;opacity:0;transition:opacity .12s,color .12s}
+.matrix tr:hover .pinb,.pinb:focus-visible,.pinb[aria-pressed=true]{opacity:1}
+.pinb:hover{color:var(--text);background:var(--line)}
+.pinb[aria-pressed=true]{color:var(--cyan)}
+.pinb[aria-pressed=true] path:first-child{fill:currentColor}
+.matrix td.c0{padding-right:36px}
+.matrix thead th{z-index:4}
+.matrix thead .c0{z-index:5}
+.matrix tr.pin td{position:sticky;z-index:2;background-color:#0f1738}
+.matrix tr.pin td.c0{z-index:3}
+.matrix tr.pin.lastpin td{border-bottom:1px solid rgba(0,216,244,.45)}
+
+/* share image preview */
+.btn.pri{background:var(--text);color:var(--ink);border-color:var(--text)}
+.btn.pri:hover{background:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+dialog#shot{margin:auto;border:1px solid #26305e;border-radius:20px;background:#0b1029;color:var(--text);padding:16px;width:min(1040px,94vw);max-height:94vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog#shot[open]{animation:pop .22s ease-out}
+dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+#shotImg{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line);background:#050812}
+.shot-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}
+.shot-act{display:flex;gap:8px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){.trail{animation:none}dialog#shot[open]{animation:none}}
 </style>
 </head>
 <body>
@@ -233,11 +271,12 @@ footer a{color:var(--fog)}
 <section id="v-radar" role="tabpanel">
     <article class="panel">
       <div class="head"><h2>Who's moving</h2>
-        <div class="tools"><span class="rtime" id="rtime" aria-live="polite"></span><button class="btn sm" id="replay" title="Play the last 3 days, one update at a time">Replay 3 days</button>
+        <div class="tools"><span class="tog" id="trailw"><button id="trails" aria-pressed="false" title="Show where each dot was over the last 12 hours">Trails</button></span><button class="btn sm" id="replay" title="Play the last 3 days, one update at a time">Replay 3 days</button><button class="btn sm" id="saveR" title="Make a picture of this chart to share">Save image</button>
         <div class="seg sm" id="win" aria-label="Time window"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div></div>
+      <div class="rbar" id="rbar" hidden><button class="play" id="rplay" aria-label="Pause"></button><input type="range" id="rslider" min="0" max="1" value="0" step="1" aria-label="Replay position"><span class="rtime" id="rtime" aria-live="polite"></span></div>
       <div class="plot" id="scatter"></div>
       <div class="legend" id="slegend"></div>
-      <p class="note">Each dot is a creator. Hover a dot to see who it is, or select it to open their chart. <b>Higher</b> means they climbed more places in the selected window. <b>Further right</b> means a lower average rank over the last 14 days, which usually means fewer stars. Creators with less than a day on the board are marked New and kept out of the pink corner.</p>
+      <p class="note">Each dot is a creator. Hover a dot to see who it is, or select it to open their chart. <b>Higher</b> means they climbed more places in the selected window. <b>Further right</b> means a lower average rank over the last 14 days, which usually means fewer stars. Creators with less than a day on the board are marked New and kept out of the pink corner. Turn on <b>Trails</b> to see where each dot was over the last three updates (12 hours), so you can tell who is speeding up and who is slowing down.</p>
     </article>
   <div class="trio">
     <article class="panel rail"><h3>Cheap and rising</h3><p class="sub hand pink">cold history, climbing now</p><ol id="l1"></ol></article>
@@ -264,11 +303,12 @@ footer a{color:var(--fog)}
         <span class="tog" data-ind="base"><button aria-pressed="false">Star baseline</button></span>
         <span class="tog" data-ind="trend"><button aria-pressed="false">Trend</button><input id="pT" type="number" value="6" min="2" max="90" aria-label="Trend smoothing, in updates"></span>
         <span class="tog" data-ind="turns"><button aria-pressed="false">Turns</button><input id="pF" type="number" value="6" min="2" max="90" aria-label="Fast average, in updates"><input id="pS" type="number" value="18" min="3" max="180" aria-label="Slow average, in updates"></span>
+        <span class="tog" data-ind="jumps"><button aria-pressed="false">Big jumps</button><input id="pJ" type="number" value="8" min="2" max="200" aria-label="Smallest jump to mark, in places"></span>
       </div>
       <div class="grp"><span class="lbl">Lower panel</span>
         <div class="seg sm" id="lower" aria-label="Lower panel"><button data-l="heat">Heat</button><button data-l="chg">24h change</button><button data-l="off" class="on">Off</button></div>
       </div>
-      <div class="grp setw"><button class="btn sm" id="setb" aria-expanded="false" aria-controls="setp">Settings</button>
+      <div class="grp setw"><button class="btn sm" id="saveC" title="Make a picture of this chart to share">Save image</button><button class="btn sm" id="setb" aria-expanded="false" aria-controls="setp">Settings</button>
         <div class="setp" id="setp" hidden>
           <label><input type="checkbox" id="optLine"> Dotted line at the current rank</label>
           <label><input type="checkbox" id="optDots"> Dot at each update</label>
@@ -282,6 +322,7 @@ footer a{color:var(--fog)}
       <div><dt>Star baseline</dt><dd>Average position over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest. It's measured as a share of the board, so it stays fair if the leaderboard grows.</dd></div>
       <div><dt>Trend</dt><dd>The rank line smoothed over the last few updates (6 is one day), so the direction shows through the noise.</dd></div>
       <div><dt>Turns</dt><dd>Arrows where the one-day average crosses the three-day average. Green means the creator started climbing, orange means they started falling.</dd></div>
+      <div><dt>Big jumps</dt><dd>A dot wherever a creator moved at least this many places between two updates. Green for a climb, orange for a fall.</dd></div>
       <div><dt>Heat</dt><dd>Spots above (+) or below (−) their own 14-day average right now. High heat means hot now while the stars still reflect the past.</dd></div>
       <div><dt>24h change</dt><dd>Spots gained (+) or lost (−) over the previous 24 hours, at every point. Easy to compare between creators.</dd></div>
     </dl>
@@ -298,11 +339,11 @@ footer a{color:var(--fog)}
       </div></div>
     <div class="bar">
       <div class="grp"><span class="lbl">Columns</span><div class="seg sm" id="hcols" aria-label="How far back"><button data-c="18" class="on">3 days</button><button data-c="84">2 weeks</button><button data-c="0">All</button></div></div>
-      <div class="grp"><span class="tog" id="hleftw"><button id="hleft" aria-pressed="false">Show creators who left</button></span></div>
+      <div class="grp"><span class="lbl">Show</span><div class="seg sm" id="hshow" aria-label="Which creators to show"><button data-s="board" class="on">On the board</button><button data-s="new">New</button><button data-s="left">Left</button></div></div>
     </div>
     <div class="scroll matrix"><table id="matrix"></table></div>
     <div class="key"><span>Fell</span><span class="ramp" id="ramp"></span><span>Climbed</span></div>
-    <p class="note">One column per 4-hour update, newest first, in your local time. Cell color shows the move since the previous update. Switch to <b>Moves</b> to see the change itself. A dash means the creator wasn't on the leaderboard at that update.</p>
+    <p class="note">One column per 4-hour update, newest first, in your local time. Cell color shows the move since the previous update. Switch to <b>Moves</b> to see the change itself. A dash means the creator wasn't on the leaderboard at that update. <b>New</b> lists creators who joined or came back in the last 24 hours. Use the pin next to a name to keep up to 3 creators at the top while you scroll.</p>
   </article>
 </section>
 </main>
@@ -311,6 +352,7 @@ footer a{color:var(--fog)}
 </div>
 <div id="tip" role="tooltip"></div>
 <div id="toast" role="status"></div>
+<dialog id="shot" aria-label="Share image"><img id="shotImg" alt=""><div class="shot-bar"><span class="sub">1600 × 900 PNG, sized for posts on X</span><span class="shot-act"><button class="btn" id="shotShare" hidden>Share</button><button class="btn" id="shotCopy">Copy image</button><button class="btn pri" id="shotSave">Download PNG</button><button class="btn" id="shotClose">Close</button></span></div></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.3.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
@@ -462,17 +504,55 @@ function hideTip(){ tip.style.display = 'none'; }
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 2200); }
 
 /* ---------- radar view ---------- */
-function render(){
-  DATA = build();
-  const {rows, N, tNow, live, times} = DATA;
-  const fresh = Date.now() - tNow < 5 * H;
+/* trails: where each creator's dot was in the previous few updates, oldest first */
+const TRAILN = 3;
+let TRAILS = false;
+try { TRAILS = localStorage.getItem('mr-trails') === '1'; } catch(e) {}
+function trailsFor(rows, prev){
+  const maps = prev.map(f => new Map(f.rows.map(r => [r.id, [r.avg, r.chw]])));
+  const out = new Map();
+  for (const r of rows){ const t = []; for (const m of maps){ const v = m.get(r.id); if (v) t.push(v); else t.length = 0; } if (t.length) out.set(r.id, t); }
+  return out;
+}
+const dotCol = r => r.chw > 0 ? (r.cheap && r.chw >= 2 ? PINK : UP) : r.chw < 0 ? DOWN : FOG;
+function sLegend(){
+  $('slegend').innerHTML = [[PINK, 'Cheap and rising'], [UP, 'Climbing'], [DOWN, 'Falling'], [FOG, 'No move']].map(([c, l]) => '<span><i style="background:' + c + '"></i>' + l + '</span>').join('') +
+    (TRAILS ? '<span><svg width="26" height="10" aria-hidden="true"><linearGradient id="lgt" gradientUnits="userSpaceOnUse" x1="1" y1="0" x2="25" y2="0"><stop offset="0" stop-color="#8e9bb8" stop-opacity="0"/><stop offset="1" stop-color="#8e9bb8"/></linearGradient><line x1="1" y1="5" x2="25" y2="5" stroke="url(#lgt)" stroke-width="2" stroke-linecap="round"/></svg>Trail, last 12 hours</span>' : '');
+}
+/* the live sticker counts down to the next update and pulls it in when it lands */
+function until(ms){ const m = Math.ceil(ms / 60e3); return m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + ' min'; }
+function tick(){
+  if (!DATA) return;
+  const {tNow, live, times} = DATA, fresh = Date.now() - tNow < 5 * H, left = tNow + 4 * H - Date.now();
   $('status').className = 'sticker' + (fresh ? '' : ' stale');
   $('stTitle').textContent = fresh ? 'Live' : 'Paused';
-  $('statusText').textContent = (fresh ? 'Updated ' : 'Last update ') + dayf(tNow) + ', ' + hhmm(tNow) + '. Next around ' + hhmm(tNow + 4 * H) + '.';
+  $('statusText').textContent = fresh ? 'Updated ' + dayf(tNow) + ', ' + hhmm(tNow) + '. ' + (left > 60e3 ? 'Next in ' + until(left) + '.' : 'Next update any minute.')
+    : 'Last update ' + dayf(tNow) + ', ' + hhmm(tNow) + '.';
   $('status').title = times.length + ' updates tracked since ' + dayf(DATA.first) + ' ' + hhmm(DATA.first) + (live ? '. Latest one read live from Motion.' : '');
+  if (left < -5 * 60e3 && !REPLAY && Date.now() - (tick.tried || 0) > 5 * 60e3) refreshLive();
+}
+async function refreshLive(){
+  tick.tried = Date.now();
+  try {
+    const live = await (await fetch('https://leaderboard.motion.game/api/leaderboard')).json();
+    if (!live || !live.rows || SNAPS.some(s => s.asOf === live.asOf) || REPLAY) return;
+    addSnaps([{asOf: live.asOf, live: true, rows: live.rows.map(r => [r.id, r.name, r.position, r.delta, !!r.isNew])}]);
+    render(); if (VIEW === 'charts') drawChart();
+    toast('New leaderboard update');
+  } catch(e) {}
+}
+setInterval(tick, 30e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+
+function render(){
+  DATA = build();
+  const {rows, N} = DATA, L = SNAPS.length - 1, prev = [];
+  for (let k = Math.max(0, L - TRAILN); k < L; k++) prev.push(build(k));
+  DATA.trails = trailsFor(rows, prev);
   if (REPLAY) stopReplay();
-  paintScatter(rows, N);
-  $('slegend').innerHTML = [[PINK, 'Cheap and rising'], [UP, 'Climbing'], [DOWN, 'Falling'], [FOG, 'No move']].map(([c, l]) => '<span><i style="background:' + c + '"></i>' + l + '</span>').join('');
+  tick();
+  paintScatter(rows, N, null, null, DATA.trails);
+  sLegend();
   list('l1', rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat).slice(0, 5), 'Nobody fits right now. Try a longer window.');
   list('l2', rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw).slice(0, 5), 'No climbers in this window.');
   list('l3', rows.filter(r => !r.cheap && r.chw < 0).sort((a, b) => a.chw - b.chw).slice(0, 5), 'Nobody is cooling off.');
@@ -486,11 +566,12 @@ function list(el, rows, emptyMsg){
 }
 
 function niceStep(span, n){ const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
-function scatter(rows, N, fixedY){
+function scatter(rows, N, fixedY, trails){
   const cw = $('scatter').clientWidth || 1140, W = Math.max(320, Math.min(1200, cw)), small = W < 560;
   const Hh = small ? Math.round(W * 1.05) : 460, m = {l: small ? 40 : 56, r: 12, t: 12, b: small ? 54 : 58};
   const iw = W - m.l - m.r, ih = Hh - m.t - m.b;
-  const ymax = fixedY || Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.12;
+  // keep a band at the top and bottom free so dots never sit on the corner labels
+  const ymax = (fixedY || Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.12) * ih / (ih - 2 * (small ? 26 : 32));
   const x = v => m.l + (v - 1) / Math.max(N - 1, 1) * iw;
   const y = v => m.t + ih / 2 - v / ymax * ih / 2;
   const T = (tx, ty, t, o) => '<text x="' + tx + '" y="' + ty + '"' + (o || '') + '>' + t + '</text>';
@@ -519,10 +600,25 @@ function scatter(rows, N, fixedY){
   // axis titles
   s += T(m.l + iw / 2, Hh - 8, 'Average rank over the last 14 days' + (small ? '' : ': further right usually means fewer stars'), ' text-anchor="middle" font-size="12.5" fill="#8e9bb8"');
   s += T(0, 0, 'Places moved', ' transform="translate(' + (small ? 11 : 14) + ',' + (m.t + ih / 2) + ') rotate(-90)" text-anchor="middle" font-size="12.5" fill="#8e9bb8"');
+  // trails fade from where the dot was to where it is now
+  if (trails && TRAILS){
+    s += '<g class="trail" pointer-events="none" fill="none" stroke-linecap="round" stroke-linejoin="round"' + (FIRSTPAINT ? ' style="animation-delay:1.3s"' : '') + '>';
+    let gi = 0;
+    for (const r of rows){
+      const tr = trails.get(r.id); if (!tr) continue;
+      const pts = tr.concat([[r.avg, r.chw]]).map(([a, c]) => [x(a), y(Math.max(-ymax, Math.min(ymax, c)))]);
+      let len = 0; for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      if (len < 6) continue;
+      const col = dotCol(r), a = pts[0], b = pts[pts.length - 1], id = 'tg' + (gi++);
+      s += '<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '"><stop offset="0" stop-color="' + col + '" stop-opacity="0"/><stop offset="1" stop-color="' + col + '" stop-opacity=".65"/></linearGradient>' +
+           '<polyline points="' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') + '" stroke="url(#' + id + ')" stroke-width="2"/>';
+    }
+    s += '</g>';
+  }
   // dots, smallest moves first so big movers sit on top
   const cx = x(N), cy = m.t;
   for (const r of rows.slice().sort((a, b) => Math.abs(a.chw) - Math.abs(b.chw))){
-    const col = r.chw > 0 ? (r.cheap && r.chw >= 2 ? PINK : UP) : r.chw < 0 ? DOWN : FOG;
+    const col = dotCol(r);
     const px = x(r.avg), py = y(r.chw);
     const delay = FIRSTPAINT ? (.25 + Math.hypot(cx - px, cy - py) / iw * 1.1).toFixed(2) : 0;
     s += '<g class="hit" data-id="' + r.id + '" tabindex="0" role="button" aria-label="' + esc(r.name) + ', rank ' + r.rank + ', moved ' + r.chw + '"><circle cx="' + px + '" cy="' + py + '" r="11" fill="transparent"/>' +
@@ -532,10 +628,10 @@ function scatter(rows, N, fixedY){
 }
 const RM = matchMedia('(prefers-reduced-motion: reduce)');
 /* draw the scatter; dots that already existed glide from where they were */
-function paintScatter(rows, N, fixedY, dur){
+function paintScatter(rows, N, fixedY, dur, trails){
   const el = $('scatter'), old = new Map();
   el.querySelectorAll('.hit').forEach(g => { const c = g.querySelector('.dot'); old.set(g.dataset.id, [+c.getAttribute('cx'), +c.getAttribute('cy')]); });
-  el.innerHTML = scatter(rows, N, fixedY);
+  el.innerHTML = scatter(rows, N, fixedY, trails);
   bindScatter(rows);
   if (RM.matches || !old.size) return;
   const moved = [];
@@ -551,30 +647,41 @@ function paintScatter(rows, N, fixedY, dur){
 }
 /* replay: step through recent updates so you can watch who has been moving */
 let REPLAY = null;
+const ICO_PLAY = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 1.8v10.4L12 7z" fill="currentColor"/></svg>';
+const ICO_PAUSE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="1.8" width="3.2" height="10.4" rx="1" fill="currentColor"/><rect x="8.3" y="1.8" width="3.2" height="10.4" rx="1" fill="currentColor"/></svg>';
 function stopReplay(){
   if (!REPLAY) return;
   clearTimeout(REPLAY.t); REPLAY = null;
-  $('replay').textContent = 'Replay 3 days'; $('replay').classList.remove('on'); $('rtime').textContent = '';
-  paintScatter(DATA.rows, DATA.N);
+  $('replay').textContent = 'Replay 3 days'; $('replay').classList.remove('on'); $('rbar').hidden = true; $('rtime').textContent = '';
+  paintScatter(DATA.rows, DATA.N, null, null, DATA.trails);
 }
 function startReplay(){
   const end = SNAPS.length - 1, from = Math.max(0, SNAPS.findIndex(s => Date.parse(s.asOf) >= Date.parse(SNAPS[end].asOf) - 72 * H));
   if (end - from < 1){ toast('Replay needs at least two saved updates'); return; }
-  const frames = []; for (let i = from; i <= end; i++){ const d = build(i); frames.push({rows: d.rows, N: d.N, t: d.tNow}); }
+  const all = []; for (let i = Math.max(0, from - TRAILN); i <= end; i++){ const d = build(i); all.push({rows: d.rows, N: d.N, t: d.tNow}); }
+  all.forEach((f, k) => f.trails = trailsFor(f.rows, all.slice(Math.max(0, k - TRAILN), k)));
+  const frames = all.slice(all.length - (end - from + 1));
   const fixedY = Math.max(5, ...frames.flatMap(f => f.rows.map(r => Math.abs(r.chw)))) * 1.12;
-  REPLAY = {k: 0};
-  $('replay').textContent = 'Stop'; $('replay').classList.add('on');
-  const step = () => {
-    if (!REPLAY) return;
-    const f = frames[REPLAY.k];
-    $('rtime').textContent = dayf(f.t) + ', ' + hhmm(f.t) + (REPLAY.k === frames.length - 1 ? ' (now)' : '');
-    paintScatter(f.rows, f.N, fixedY, 800);
-    REPLAY.k++;
-    if (REPLAY.k < frames.length) REPLAY.t = setTimeout(step, 1100);
-    else REPLAY.t = setTimeout(stopReplay, 2200);
-  };
-  step();
+  REPLAY = {k: 0, frames, fixedY, playing: true, t: 0};
+  $('replay').textContent = 'Close replay'; $('replay').classList.add('on');
+  $('rbar').hidden = false; $('rslider').max = frames.length - 1;
+  showFrame(0); playBtn(); schedule();
 }
+function showFrame(k, dur){
+  REPLAY.k = k; const f = REPLAY.frames[k];
+  $('rslider').value = k;
+  $('rtime').textContent = dayf(f.t) + ', ' + hhmm(f.t) + (k === REPLAY.frames.length - 1 ? ' (now)' : '');
+  paintScatter(f.rows, f.N, REPLAY.fixedY, dur == null ? 800 : dur, f.trails);
+}
+function playBtn(){ const end = REPLAY.k >= REPLAY.frames.length - 1; $('rplay').innerHTML = REPLAY.playing ? ICO_PAUSE : ICO_PLAY; $('rplay').setAttribute('aria-label', REPLAY.playing ? 'Pause' : end ? 'Play again' : 'Play'); }
+function schedule(){
+  clearTimeout(REPLAY.t);
+  if (!REPLAY.playing) return;
+  if (REPLAY.k >= REPLAY.frames.length - 1){ REPLAY.playing = false; playBtn(); return; }
+  REPLAY.t = setTimeout(() => { if (!REPLAY) return; showFrame(REPLAY.k + 1); schedule(); }, 1100);
+}
+$('rplay').onclick = () => { if (!REPLAY) return; if (!REPLAY.playing && REPLAY.k >= REPLAY.frames.length - 1) showFrame(0, 500); REPLAY.playing = !REPLAY.playing; playBtn(); schedule(); };
+$('rslider').oninput = e => { if (!REPLAY) return; REPLAY.playing = false; clearTimeout(REPLAY.t); playBtn(); showFrame(+e.target.value, 350); };
 function bindScatter(rows){
   const byId = Object.fromEntries(rows.map(r => [r.id, r]));
   document.querySelectorAll('#scatter .hit').forEach(g => {
@@ -599,26 +706,39 @@ function table(){
 }
 
 /* ---------- history view ---------- */
-function tint(d){
+function tintC(d){
   if (!d) return '';
   const a = (0.26 + Math.min(Math.abs(d), 12) / 12 * 0.6).toFixed(2);
-  return d > 0 ? 'background:rgba(63,214,143,' + a + ')' : 'background:rgba(255,120,73,' + a + ')';
+  return d > 0 ? 'rgba(63,214,143,' + a + ')' : 'rgba(255,120,73,' + a + ')';
 }
-let HCOLS = 18, HLEFT = false, HTOKEN = 0;
+function tint(d){ const c = tintC(d); return c ? 'background:' + c : ''; }
+let HCOLS = 18, HSHOW = 'board', HTOKEN = 0, PINS = [];
+try { PINS = JSON.parse(localStorage.getItem('mr-pins') || '[]'); } catch(e) {}
+const ICO_PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M9 3h6l-1 6.5 3.5 3V15h-11v-2.5L10 9.5z"/><path d="M12 15v6"/></svg>';
+function togglePin(id){
+  if (PINS.includes(id)) PINS = PINS.filter(x => x !== id);
+  else { if (PINS.length >= 3){ toast('You can pin up to 3 creators'); return; } PINS.push(id); }
+  try { localStorage.setItem('mr-pins', JSON.stringify(PINS)); } catch(e) {}
+  matrix();
+}
 function matrix(){
   const {rows, left, times, pts} = DATA;
   const q = HQ.trim().toLowerCase(), hit = r => !q || r.name.toLowerCase().includes(q);
   const sorts = {rank: (a, b) => a.rank - b.rank, climb: (a, b) => b.tot - a.tot || a.rank - b.rank, fall: (a, b) => a.tot - b.tot || a.rank - b.rank, name: (a, b) => a.name.localeCompare(b.name)};
-  const shown = left.filter(r => !r.unloaded);
-  $('hleft').textContent = 'Show creators who left' + (left.length ? ' (' + left.length + ')' : '');
-  let list = rows.filter(hit).sort(sorts[HSORT]);
-  if (HLEFT) list = list.concat(shown.filter(hit).map(r => Object.assign({gone: true}, r)));
+  const shown = left.filter(r => !r.unloaded).map(r => Object.assign({gone: true}, r)), fresh = rows.filter(r => r.young);
+  document.querySelectorAll('#hshow button').forEach(b => { const s = b.dataset.s, n = s === 'new' ? fresh.length : s === 'left' ? left.length : rows.length; b.textContent = {board: 'On the board', new: 'New', left: 'Left'}[s] + ' (' + n + ')'; });
+  const pool = HSHOW === 'left' ? shown : HSHOW === 'new' ? fresh : rows;
+  const srt = HSHOW === 'left' && HSORT !== 'name' ? (a, b) => b.goneT - a.goneT : sorts[HSORT];
+  const pinned = PINS.map(id => rows.find(r => r.id === id) || shown.find(r => r.id === id)).filter(Boolean);
+  const rest = pool.filter(r => hit(r) && !PINS.includes(r.id)).sort(srt), list = pinned.concat(rest);
   const cols = times.slice(0, HCOLS || Infinity);
   let lastDay = '';
   const head = '<thead><tr><th class="c0">Creator</th>' + cols.map(t => { const d = dayf(t); const show = d !== lastDay; lastDay = d; return '<th>' + hhmm(t) + '<small>' + (show ? d : '&nbsp;') + '</small></th>'; }).join('') + '</tr></thead>';
-  const rowHtml = r => {
-    const byT = new Map(pts[r.id].map(q => [q.t, q]));
-    let h = '<tr' + (r.gone ? ' class="gone"' : '') + '><td class="c0" data-open="' + r.id + '"><span class="rk">' + (r.gone ? '' : '#' + r.rank) + '</span><span class="who">' + avatar(r.name, 22, r.gone ? null : r.chw) + '<span class="nm">' + esc(r.name) + '</span>' + (r.gone ? '<span class="lft">left ' + dayf(r.goneT) + '</span>' : badge(r)) + '</span></td>';
+  const rowHtml = (r, pi) => {
+    const byT = new Map(pts[r.id].map(q => [q.t, q])), pin = pi < pinned.length;
+    const cl = (r.gone ? 'gone ' : '') + (pin ? 'pin' + (pi === pinned.length - 1 ? ' lastpin' : '') : '');
+    let h = '<tr' + (cl ? ' class="' + cl.trim() + '"' : '') + '><td class="c0" data-open="' + r.id + '"><span class="rk">' + (r.gone ? '' : '#' + r.rank) + '</span><span class="who">' + avatar(r.name, 22, r.gone ? null : r.chw) + '<span class="nm">' + esc(r.name) + '</span>' + (r.gone ? '<span class="lft">left ' + dayf(r.goneT) + '</span>' : badge(r)) + '</span>' +
+      '<button class="pinb" data-pin="' + r.id + '" aria-pressed="' + pin + '" aria-label="' + (pin ? 'Unpin ' : 'Pin ') + esc(r.name) + '" title="' + (pin ? 'Unpin' : 'Pin to the top') + '">' + ICO_PIN + '</button></td>';
     cols.forEach((t, i) => {
       const cur = byT.get(t);
       if (!cur){ h += '<td class="cell na">–</td>'; return; }
@@ -626,7 +746,8 @@ function matrix(){
       if (!cur.gap) for (let j = i + 1; j < times.length; j++){ prev = byT.get(times[j]); if (prev) break; }
       const d = prev ? prev.r - cur.r : 0;
       const val = HMODE === 'rank' ? cur.r : (prev ? (d > 0 ? '+' + d : d < 0 ? '−' + (-d) : '0') : '');
-      h += '<td class="cell' + (cur.d ? ' d' : '') + '" style="' + tint(d) + '" data-id="' + r.id + '" data-t="' + t + '" data-r="' + cur.r + '" data-n="' + cur.n + '" data-d="' + (prev ? d : '') + '" data-x="' + (cur.d ? 1 : 0) + '" data-g="' + (cur.gap ? 1 : 0) + '">' + val + '</td>';
+      const tc = tintC(d), st = pin ? (tc ? 'background:linear-gradient(' + tc + ',' + tc + '),#0f1738' : '') : tint(d);
+      h += '<td class="cell' + (cur.d ? ' d' : '') + '" style="' + st + '" data-id="' + r.id + '" data-t="' + t + '" data-r="' + cur.r + '" data-n="' + cur.n + '" data-d="' + (prev ? d : '') + '" data-x="' + (cur.d ? 1 : 0) + '" data-g="' + (cur.gap ? 1 : 0) + '">' + val + '</td>';
     });
     return h + '</tr>';
   };
@@ -634,10 +755,11 @@ function matrix(){
   if (!RM.matches && $('matrix').offsetParent) $('matrix').querySelectorAll('tbody tr').forEach(tr => { const c = tr.querySelector('[data-open]'); if (c) before.set(c.dataset.open, tr.getBoundingClientRect().top); });
   $('matrix').innerHTML = head + '<tbody></tbody>';
   const body = $('matrix').tBodies[0], tok = ++HTOKEN;
-  if (!list.length) body.innerHTML = '<tr><td class="c0 empty" style="padding:16px">No creator matches "' + esc(HQ) + '".</td></tr>';
+  const emptyRow = rest.length ? '' : '<tr><td class="c0 empty" style="padding:16px">' + (q ? 'No creator matches "' + esc(HQ) + '".' : HSHOW === 'new' ? 'Nobody joined or came back in the last 24 hours.' : HSHOW === 'left' ? 'Nobody has left the leaderboard since tracking began.' : 'No creators yet.') + '</td></tr>';
   let i = 0;
-  const step = () => { if (tok !== HTOKEN) return; let out = ''; for (const end = Math.min(list.length, i + 50); i < end; i++) out += rowHtml(list[i]); body.insertAdjacentHTML('beforeend', out); if (i < list.length) setTimeout(step, 0); };
+  const step = () => { if (tok !== HTOKEN) return; let out = ''; for (const end = Math.min(list.length, i + 50); i < end; i++) out += rowHtml(list[i], i); if (i >= list.length) out += emptyRow; body.insertAdjacentHTML('beforeend', out); if (i < list.length) setTimeout(step, 0); };
   step();
+  if (pinned.length){ let top = $('matrix').tHead.offsetHeight; body.querySelectorAll('tr.pin').forEach(tr => { tr.querySelectorAll('td').forEach(td => td.style.top = top + 'px'); top += tr.offsetHeight; }); }
   if (before.size){
     const vh = innerHeight, moved = [];
     body.querySelectorAll('tr').forEach(tr => {
@@ -662,7 +784,7 @@ $('ramp').innerHTML = [-12, -6, -2, 0, 2, 6, 12].map(d => '<i style="' + (tint(d
 
 /* ---------- charts view ---------- */
 let SEL = [], TV = null, MAIN = [], LASTSEL = '';
-const IND = {base: false, trend: false, turns: false};
+const IND = {base: false, trend: false, turns: false, jumps: false};
 let LOWER = 'off';
 const OPT = {rankLine: false, dots: true};
 try { Object.assign(OPT, JSON.parse(localStorage.getItem('mr-chart-opt') || '{}')); } catch(e) {}
@@ -712,7 +834,7 @@ const per = id => Math.max(2, +$(id).value || 2);
 
 function drawChart(){
   const el = $('tv'), lg = $('legend');
-  if (TV){ TV.remove(); TV = null; } MAIN = []; el.innerHTML = ''; lg.innerHTML = '';
+  if (TV){ TV.remove(); TV = null; } MAIN = []; FOCUS = null; el.innerHTML = ''; lg.innerHTML = '';
   if (!window.LightweightCharts){ el.innerHTML = '<div class="blank">The chart library didn\'t load. Check your connection, then reload the page.</div>'; return; }
   $('ikey').innerHTML = ''; CROSSINFO = '';
   if (!DATA || !SEL.length){ el.innerHTML = '<div class="blank">Add a creator to see their rank over time.<br>You can also select any name on the Radar.</div>'; return; }
@@ -732,24 +854,30 @@ function drawChart(){
   SEL.forEach((id, i) => {
     const col = SERIES[i], name = DATA.names[id], segs = segsOf(id);
     if (!segs.length) return;
-    const flat = segs.flat(), npts = flat.length;
-    const ss = addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: OPT.dots && npts < 120, pointMarkersRadius: 3, priceLineVisible: OPT.rankLine, lastPriceAnimation: 0}, 0, segs.map(plain), segs);
-    MAIN.push({ss, name, col, d: plain(flat), id, gone: !current.has(id)});
-    const base = baseSegs(segs);
-    if (IND.base) addSplit(LC.LineSeries, Object.assign({}, thin, {color: col + 'b3', lineWidth: 2, lineStyle: 3}), 0, base, segs);
-    if (IND.trend) addSplit(LC.LineSeries, Object.assign({}, thin, {color: col, lineWidth: 1, lineStyle: 1}), 0, segs.map(g => ema(g, per('pT'))), segs);
+    const flat = segs.flat(), npts = flat.length, M = {name, col, d: plain(flat), id, gone: !current.has(id), all: []};
+    const reg = (list, color, w) => { for (const sr of list) M.all.push({sr, color, w}); return list; };
+    const ss = reg(addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: rankFmt, pointMarkersVisible: OPT.dots && npts < 120, pointMarkersRadius: 3, priceLineVisible: OPT.rankLine, lastPriceAnimation: 0}, 0, segs.map(plain), segs), col, 2);
+    M.ss = ss; MAIN.push(M);
+    const base = baseSegs(segs), marks = segs.map(() => []);
+    if (IND.base) reg(addSplit(LC.LineSeries, Object.assign({}, thin, {color: col + 'b3', lineWidth: 2, lineStyle: 3}), 0, base, segs), col + 'b3', 2);
+    if (IND.trend) reg(addSplit(LC.LineSeries, Object.assign({}, thin, {color: col, lineWidth: 1, lineStyle: 1}), 0, segs.map(g => ema(g, per('pT'))), segs), col, 1);
     if (IND.turns){
       const fN = per('pF'), sN = Math.max(per('pS'), fN + 1);
       let long = false;
-      segs.forEach((g, k) => { const f = sma(g, fN), sl = sma(g, sN); if (sl.length) long = true; const mk = crossings(f, sl); if (!one) mk.forEach(x => x.text = ''); crossCount += mk.length; if (mk.length) LC.createSeriesMarkers(ss[k], mk); });
+      segs.forEach((g, k) => { const f = sma(g, fN), sl = sma(g, sN); if (sl.length) long = true; const mk = crossings(f, sl); if (!one) mk.forEach(x => x.text = ''); crossCount += mk.length; marks[k].push(...mk); });
       if (!long) crossShort = sN;
     }
+    if (IND.jumps){
+      const th = per('pJ');
+      segs.forEach((g, k) => { for (let j = 1; j < g.length; j++){ const d = g[j - 1].value - g[j].value; if (Math.abs(d) >= th) marks[k].push({time: g[j].time, position: d > 0 ? 'aboveBar' : 'belowBar', shape: 'circle', color: d > 0 ? UP : DOWN, text: SEL.length <= 2 ? (d > 0 ? '+' : '−') + Math.abs(d) : ''}); } });
+    }
+    marks.forEach((mk, k) => { if (mk.length) LC.createSeriesMarkers(ss[k], mk.sort((a, b) => a.time - b.time)); });
     if (LOWER !== 'off' && npts > 1){
       const parts = LOWER === 'heat' ? base.map((bp, k) => bp.map((b, j) => ({time: b.time, value: +(b.value - segs[k][j].value).toFixed(1)}))) : segs.map(change24);
       const vals = parts.flat();
       const ls = one
         ? addSplit(LC.HistogramSeries, {priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true}, 1, parts.map(pt => pt.map(p => ({time: p.time, value: p.value, color: p.value > 0 ? UP : p.value < 0 ? DOWN : '#5d6a8c'}))), segs)
-        : addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true, crosshairMarkerRadius: 3}, 1, parts, segs);
+        : reg(addSplit(LC.LineSeries, {color: col, lineWidth: 2, priceFormat: lowFmt, priceLineVisible: false, lastValueVisible: true, crosshairMarkerRadius: 3}, 1, parts, segs), col, 2);
       MAIN[MAIN.length - 1].low = ls; MAIN[MAIN.length - 1].lowLast = vals[vals.length - 1];
       if (!lowFirst){ lowFirst = ls[0]; lowFirst.priceScale().applyOptions({invertScale: false}); lowFirst.createPriceLine({price: 0, color: '#3a4577', lineWidth: 1, lineStyle: 2, axisLabelVisible: false}); }
     }
@@ -765,28 +893,273 @@ function drawChart(){
     lg.innerHTML = MAIN.map(m => { let v = param && param.seriesData ? valAt(m.ss, param) : null; if (!v) v = param && param.time ? null : m.d[m.d.length - 1];
       const val = v ? v.value : null;
       let lw = ''; if (m.low){ let lv = param && param.seriesData ? valAt(m.low, param) : null; if (!lv && !(param && param.time)) lv = m.lowLast; if (lv && lv.value != null){ const x = lv.value; lw = ' <em class="mv ' + (x > 0 ? 'up' : x < 0 ? 'down' : 'flat') + '" style="font-style:normal;font-size:13px">' + (x > 0 ? '+' : '') + (x % 1 ? x.toFixed(1) : x) + '</em>'; } }
-      return '<span><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b>' + lw + (m.gone ? ' <span class="lft" style="margin-left:2px">left the leaderboard</span>' : '') + '</span>'; }).join('');
+      return '<span data-fid="' + m.id + '"><i style="background:' + m.col + '"></i>' + esc(m.name) + ' <b>' + (val == null ? '' : '#' + Math.round(val)) + '</b>' + lw + (m.gone ? ' <span class="lft" style="margin-left:2px">left the leaderboard</span>' : '') + '</span>'; }).join('');
   };
   paint(null); TV.subscribeCrosshairMove(paint);
 }
-let CROSSINFO = '';
+let CROSSINFO = '', FOCUS = null;
+/* hovering a creator in the legend or chips fades everyone else */
+function focusLine(i){
+  if (i == null || i < 0 || MAIN.length < 2) i = null;
+  if (i === FOCUS) return; FOCUS = i;
+  MAIN.forEach((m, j) => m.all.forEach(({sr, color, w}) => sr.applyOptions(i == null ? {color, lineWidth: w} : j === i ? {color, lineWidth: w + 1} : {color: color.slice(0, 7) + '2e', lineWidth: w})));
+}
+['legend', 'chips'].forEach(k => {
+  $(k).addEventListener('mouseover', e => { const s = e.target.closest('[data-fid]'); focusLine(s ? MAIN.findIndex(m => m.id === s.dataset.fid) : null); });
+  $(k).addEventListener('mouseleave', () => focusLine(null));
+});
 function keyLine(style, color, w){ const da = {solid: '', dash: '6 4', large: '10 5', dot: '1.5 3.5'}[style]; return '<svg width="26" height="10" aria-hidden="true"><line x1="1" y1="5" x2="25" y2="5" stroke="' + color + '" stroke-width="' + (w || 2) + '"' + (da ? ' stroke-dasharray="' + da + '"' : '') + ' stroke-linecap="round"/></svg>'; }
 function ikey(){
   const k = [[keyLine('solid', '#eef1fa', 2), 'Rank']];
   if (IND.base) k.push([keyLine('large', '#eef1fa', 2), 'Star baseline']);
   if (IND.trend) k.push([keyLine('dot', '#eef1fa', 1.5), 'Trend']);
   if (IND.turns) k.push(['<b style="color:' + UP + '">▲</b><b style="color:' + DOWN + '">▼</b>', 'Turns']);
+  if (IND.jumps) k.push(['<b style="color:' + UP + '">●</b><b style="color:' + DOWN + '">●</b>', 'Big jumps']);
   if (LOWER !== 'off') k.push(['<span style="color:#5d6a8c">▁▃</span>', LOWER === 'heat' ? 'Heat' : '24h change']);
   $('ikey').innerHTML = k.map(([g, l]) => '<span style="display:inline-flex;align-items:center;gap:7px">' + g + l + '</span>').join('') + (CROSSINFO ? '<span style="color:#5d6a8c">' + CROSSINFO + '</span>' : '');
 }
 function chips(){
-  $('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip"><i style="background:' + SERIES[i] + '"></i>' + esc(DATA.names[id]) + '<button data-rm="' + id + '" aria-label="Remove ' + esc(DATA.names[id]) + '">×</button></span>').join('') : '<span class="sub">No creators picked yet. You can compare up to 4.</span>';
+  $('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip" data-fid="' + id + '"><i style="background:' + SERIES[i] + '"></i>' + esc(DATA.names[id]) + '<button data-rm="' + id + '" aria-label="Remove ' + esc(DATA.names[id]) + '">×</button></span>').join('') : '<span class="sub">No creators picked yet. You can compare up to 4.</span>';
   document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { SEL = SEL.filter(x => x !== b.dataset.rm); syncHash(); refreshCharts(); });
 }
-function refreshCharts(){ if (!DATA) return; chips(); drawChart(); }
+function refreshCharts(){ if (!DATA) return; chips(); drawChart(); $('saveC').disabled = !MAIN.length; }
 function addSel(ids){ if (!ALL_LOADED && ids.some(id => !DATA.pts[id] && DATA.names[id])){ loadAll().then(() => addSel(ids)); return; } let full = false; for (const id of ids){ if (!DATA.pts[id] || SEL.includes(id)) continue; if (SEL.length >= 4){ full = true; break; } SEL.push(id); } if (full) toast('Charts compare up to 4 creators'); syncHash(); refreshCharts(); }
-function syncHash(){ const h = '#charts' + (SEL.length ? '=' + SEL.map(id => encodeURIComponent(DATA.names[id])).join(',') : ''); if (location.hash !== h) history.replaceState(null, '', h); }
+function syncHash(){ const h = '#charts' + (SEL.length ? '=' + SEL.map(id => encodeURIComponent(DATA.names[id])).join(',') : ''); if (location.hash !== h) history.replaceState(null, '', h); remember(); }
+/* the last tab and picks come back on the next visit */
+function remember(){ if (!DATA) return; try { localStorage.setItem('mr-last', JSON.stringify({v: VIEW, sel: SEL.map(id => DATA.names[id])})); } catch(e) {} }
 function openChart(ids){ SEL = []; show('charts'); addSel(ids); scrollTo({top: 0, behavior: 'smooth'}); }
+
+/* ---------- share images ---------- */
+/* drawn from the data on a fixed 1600 x 900 canvas, so every image looks the same on any screen */
+const CW = 1600, CH = 900, CS = 2, PAD = 64, INK = '#050812', TXT = '#eef1fa';
+const SITE = /github\.io$|^localhost$|^[\d.]+$|^\[/.test(location.hostname) || !location.hostname ? 'motion-radar-tau.vercel.app' : location.host;
+function fnt(g, w, px, fam, st){ g.font = w + ' ' + px + 'px ' + (fam || 'Archivo, sans-serif'); try { g.fontStretch = st || 'normal'; } catch(e) {} }
+function fit(g, s, w){ if (g.measureText(s).width <= w) return s; while (s.length > 1 && g.measureText(s + '…').width > w) s = s.slice(0, -1); return s + '…'; }
+function rr(g, x, y, w, h, r){ g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
+const uDay = t => new Date(t).toLocaleDateString('en-GB', {timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short'});
+const uDayS = t => new Date(t).toLocaleDateString('en-GB', {timeZone: 'UTC', weekday: 'short', day: 'numeric'});
+const uHM = t => new Date(t).toLocaleTimeString('en-GB', {timeZone: 'UTC', hour: '2-digit', minute: '2-digit'});
+async function cardFonts(){ try { await Promise.all(['850 30px Archivo', '750 46px Archivo', '600 16px Archivo', '400 28px "Permanent Marker"', '700 32px Caveat'].map(f => document.fonts.load(f))); } catch(e) {} }
+function cardBase(){
+  const c = document.createElement('canvas'); c.width = CW * CS; c.height = CH * CS;
+  const g = c.getContext('2d'); g.scale(CS, CS);
+  g.fillStyle = INK; g.fillRect(0, 0, CW, CH);
+  let r = g.createRadialGradient(CW * .86, -80, 0, CW * .86, -80, 900); r.addColorStop(0, 'rgba(0,216,244,.14)'); r.addColorStop(1, 'rgba(0,216,244,0)'); g.fillStyle = r; g.fillRect(0, 0, CW, CH);
+  r = g.createRadialGradient(-60, 140, 0, -60, 140, 760); r.addColorStop(0, 'rgba(255,56,119,.12)'); r.addColorStop(1, 'rgba(255,56,119,0)'); g.fillStyle = r; g.fillRect(0, 0, CW, CH);
+  g.strokeStyle = 'rgba(144,161,185,.05)'; g.lineWidth = 1; g.beginPath();
+  for (let x = 40.5; x < CW; x += 40){ g.moveTo(x, 0); g.lineTo(x, CH); } for (let y = 40.5; y < CH; y += 40){ g.moveTo(0, y); g.lineTo(CW, y); } g.stroke();
+  return [c, g];
+}
+function cardHead(g, title, sub, t){
+  g.save(); g.translate(PAD, 50); g.scale(44 / 34, 44 / 34); g.lineWidth = 2; g.strokeStyle = '#1c2550';
+  g.beginPath(); g.arc(17, 17, 15.5, 0, 7); g.stroke(); g.beginPath(); g.arc(17, 17, 9, 0, 7); g.stroke();
+  g.globalAlpha = .9; g.fillStyle = PINK; g.beginPath(); g.moveTo(17, 17); g.lineTo(17, 1.5); g.arc(17, 17, 15.5, -Math.PI / 2, 0); g.closePath(); g.fill();
+  g.globalAlpha = 1; g.fillStyle = '#00d8f4'; g.beginPath(); g.arc(25, 10, 2.6, 0, 7); g.fill(); g.restore();
+  g.textBaseline = 'middle'; g.fillStyle = TXT; fnt(g, 850, 30, null, 'expanded'); g.fillText('Motion Radar', PAD + 58, 73);
+  // the cyan sticker carries the time of the update, in UTC so it reads the same everywhere
+  const l1 = uDay(t), l2 = uHM(t) + ' UTC update';
+  fnt(g, 400, 27, '"Permanent Marker", Archivo'); const w1 = g.measureText(l1).width; fnt(g, 600, 15); const w2 = g.measureText(l2).width;
+  const sw = Math.max(w1, w2) + 40, sh = 78, sx = CW - PAD - sw - 6, sy = 34;
+  g.save(); g.translate(sx + sw / 2, sy + sh / 2); g.rotate(2.5 * Math.PI / 180);
+  g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(-sw / 2 + 5, -sh / 2 + 7, sw, sh); g.fillStyle = '#00d8f4'; g.fillRect(-sw / 2, -sh / 2, sw, sh);
+  g.fillStyle = INK; g.textBaseline = 'alphabetic'; fnt(g, 400, 27, '"Permanent Marker", Archivo'); g.fillText(l1, -sw / 2 + 20, -sh / 2 + 38);
+  fnt(g, 600, 15); g.fillText(l2, -sw / 2 + 20, -sh / 2 + 62); g.restore();
+  g.textBaseline = 'alphabetic'; g.fillStyle = TXT; fnt(g, 750, 46, null, 'semi-expanded'); g.fillText(fit(g, title, CW - PAD * 2 - sw - 40), PAD, 178);
+  fnt(g, 700, 32, 'Caveat, cursive'); g.fillStyle = PINK; g.fillText(sub, PAD + 2, 216);
+}
+function cardFoot(g){
+  g.textBaseline = 'alphabetic'; g.textAlign = 'left'; fnt(g, 700, 19, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText(SITE, PAD, CH - 40);
+  fnt(g, 500, 15); g.fillStyle = '#5d6a8c'; g.textAlign = 'right'; g.fillText('Unofficial. Data from the public Motion leaderboard, saved every 4 hours.', CW - PAD, CH - 40); g.textAlign = 'left';
+}
+function cardPanel(g, x, y, w, h){ rr(g, x, y, w, h, 22); g.fillStyle = 'rgba(11,16,41,.9)'; g.fill(); g.strokeStyle = 'rgba(38,48,94,.85)'; g.lineWidth = 1; g.stroke(); }
+const mvTxt = d => d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '0';
+const mvCol = d => d > 0 ? UP : d < 0 ? DOWN : FOG;
+
+function radarCard(f){
+  const [c, g] = cardBase(), {rows, N} = f;
+  const wl = WIN === 4 ? 'the last 4 hours' : WIN === 24 ? 'the last 24 hours' : WIN === 72 ? 'the last 3 days' : 'all saved history';
+  cardHead(g, "Who's moving on the Motion leaderboard", 'places moved over ' + wl, f.t);
+  // plot panel on the left, the named movers on the right
+  const P = {x: PAD, y: 246, w: 1000, h: 568};
+  cardPanel(g, P.x, P.y, P.w, P.h);
+  const m = {l: P.x + 70, r: P.x + P.w - 26, t: P.y + 26, b: P.y + P.h - 70}, iw = m.r - m.l, ih = m.b - m.t;
+  const ymax = (f.fixedY || Math.max(5, ...rows.map(r => Math.abs(r.chw))) * 1.12) * ih / (ih - 2 * 46);
+  const X = v => m.l + (v - 1) / Math.max(N - 1, 1) * iw, Y = v => m.t + ih / 2 - Math.max(-ymax, Math.min(ymax, v)) / ymax * ih / 2;
+  g.lineWidth = 1; fnt(g, 600, 14); g.fillStyle = '#5d6a8c'; g.textBaseline = 'middle';
+  const ys = niceStep(ymax, 3);
+  for (let v = -Math.floor(ymax / ys) * ys; v <= ymax; v += ys){
+    if (v){ g.strokeStyle = '#151d45'; g.beginPath(); g.moveTo(m.l, Math.round(Y(v)) + .5); g.lineTo(m.r, Math.round(Y(v)) + .5); g.stroke(); }
+    g.textAlign = 'right'; g.fillText(v > 0 ? '+' + v : v < 0 ? '−' + (-v) : '0', m.l - 12, Y(v));
+  }
+  const xs = niceStep(N, 6), xt = [1]; for (let v = xs; v < N - xs * .4; v += xs) xt.push(v); xt.push(N);
+  g.textBaseline = 'alphabetic';
+  for (const v of xt){ g.strokeStyle = '#151d45'; g.beginPath(); g.moveTo(Math.round(X(v)) + .5, m.t); g.lineTo(Math.round(X(v)) + .5, m.b); g.stroke(); g.textAlign = v === N ? 'right' : v === 1 ? 'left' : 'center'; g.fillText('#' + v, X(v), m.b + 24); }
+  // the cheap-and-climbing zone
+  const zx = X((N + 1) / 2);
+  g.fillStyle = 'rgba(255,56,119,.08)'; g.fillRect(zx, m.t, m.r - zx, Y(0) - m.t);
+  g.setLineDash([4, 5]); g.strokeStyle = 'rgba(255,56,119,.5)'; g.strokeRect(zx + .5, m.t + .5, m.r - zx - 1, Y(0) - m.t - 1); g.setLineDash([]);
+  g.strokeStyle = '#3a4577'; g.beginPath(); g.moveTo(m.l, Math.round(Y(0)) + .5); g.lineTo(m.r, Math.round(Y(0)) + .5); g.stroke();
+  const corner = (x, y, a, t, col, w) => { g.textAlign = a; fnt(g, w, 15); g.fillStyle = col; g.fillText(t, x, y); };
+  corner(zx + 12, m.t + 24, 'left', 'Cheap and climbing', '#ff6b98', 700); corner(m.l + 12, m.t + 24, 'left', 'Popular and climbing', '#4a5a86', 600);
+  corner(m.l + 12, m.b - 14, 'left', 'Popular and falling', '#4a5a86', 600); corner(m.r - 12, m.b - 14, 'right', 'Cheap and falling', '#4a5a86', 600);
+  g.textAlign = 'center'; fnt(g, 500, 14); g.fillStyle = '#8e9bb8'; g.fillText('Average rank over the last 14 days: further right usually means fewer stars', m.l + iw / 2, m.b + 52);
+  g.save(); g.translate(P.x + 22, m.t + ih / 2); g.rotate(-Math.PI / 2); g.fillText('Places moved', 0, 0); g.restore();
+  // trails, then dots, smallest moves first
+  if (f.trails && TRAILS) for (const r of rows){
+    const tr = f.trails.get(r.id); if (!tr) continue;
+    const pts = tr.concat([[r.avg, r.chw]]).map(([a, v]) => [X(a), Y(v)]), a = pts[0], b = pts[pts.length - 1];
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 5 && pts.length < 3) continue;
+    const gr = g.createLinearGradient(a[0], a[1], b[0], b[1]), col = dotCol(r);
+    gr.addColorStop(0, col + '00'); gr.addColorStop(1, col + 'aa');
+    g.strokeStyle = gr; g.lineWidth = 2.5; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
+  }
+  for (const r of rows.slice().sort((a, b) => Math.abs(a.chw) - Math.abs(b.chw))){
+    g.beginPath(); g.arc(X(r.avg), Y(r.chw), 6.5, 0, 7); g.fillStyle = dotCol(r); g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#0b1029'; g.stroke();
+  }
+  // the named movers get a numbered marker on the plot and a row on the right
+  const cheap = rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat).slice(0, 3);
+  const climb = rows.filter(r => r.chw > 0 && !cheap.includes(r)).sort((a, b) => b.chw - a.chw).slice(0, cheap.length ? 3 : 4);
+  const named = cheap.concat(climb);
+  named.slice().reverse().forEach(r => {
+    const k = named.indexOf(r) + 1, x = X(r.avg), y = Y(r.chw);
+    g.beginPath(); g.arc(x, y, 13, 0, 7); g.fillStyle = dotCol(r); g.fill(); g.lineWidth = 3; g.strokeStyle = '#0b1029'; g.stroke();
+    g.fillStyle = INK; fnt(g, 800, 14); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(k, x, y + 1);
+  });
+  const S = {x: PAD + 1024, y: 246, w: CW - PAD - (PAD + 1024), h: 568};
+  cardPanel(g, S.x, S.y, S.w, S.h);
+  let y = S.y + 46;
+  const section = (title, hand, col, list, k0, empty) => {
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic'; fnt(g, 750, 22, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText(title, S.x + 28, y);
+    fnt(g, 700, 25, 'Caveat, cursive'); g.fillStyle = col; g.fillText(hand, S.x + 28, y + 30); y += 52;
+    if (!list.length){ fnt(g, 700, 24, 'Caveat, cursive'); g.fillStyle = FOG; g.fillText(empty, S.x + 28, y + 26); y += 50; }
+    list.forEach((r, i) => {
+      const cy = y + 26, k = k0 + i + 1;
+      if (i){ g.strokeStyle = '#151d42'; g.lineWidth = 1; g.beginPath(); g.moveTo(S.x + 28, y + .5); g.lineTo(S.x + S.w - 28, y + .5); g.stroke(); }
+      g.beginPath(); g.arc(S.x + 42, cy, 13, 0, 7); g.fillStyle = dotCol(r); g.fill();
+      g.fillStyle = INK; fnt(g, 800, 14); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(k, S.x + 42, cy + 1);
+      g.textAlign = 'right'; fnt(g, 800, 20, null, 'semi-expanded'); g.fillStyle = mvCol(r.chw); g.fillText(mvTxt(r.chw), S.x + S.w - 28, cy);
+      fnt(g, 600, 16); g.fillStyle = '#8e9bb8'; g.fillText('#' + r.rank, S.x + S.w - 96, cy);
+      g.textAlign = 'left'; fnt(g, 650, 19); g.fillStyle = TXT; g.fillText(fit(g, r.name, S.w - 196), S.x + 68, cy);
+      y += 52;
+    });
+    y += 26;
+  };
+  section('Cheap and rising', 'cold history, climbing now', PINK, cheap, 0, 'Nobody fits right now');
+  section('Biggest climbers', 'up the most in this window', UP, climb, cheap.length, 'No climbers in this window');
+  g.textBaseline = 'alphabetic'; g.textAlign = 'left'; fnt(g, 500, 14); g.fillStyle = '#5d6a8c';
+  g.fillText('Numbers match the dots on the chart.', S.x + 28, S.y + S.h - 26);
+  cardFoot(g);
+  return c;
+}
+
+function chartCard(){
+  const [c, g] = cardBase();
+  const vr = TV ? TV.timeScale().getVisibleRange() : null;
+  const lines = MAIN.map(m => ({m, segs: segsOf(m.id)}));
+  const allT = lines.flatMap(l => l.segs.flat().map(p => p.time));
+  let t0 = Math.min(...allT), t1 = Math.max(...allT);
+  if (vr){ t0 = Math.max(t0, +vr.from); t1 = Math.min(t1, +vr.to); }
+  if (t1 <= t0){ t0 -= 7200; t1 += 7200; }
+  const vis = p => p.time >= t0 && p.time <= t1;
+  const one = MAIN.length === 1;
+  cardHead(g, one ? MAIN[0].name + ' on the Motion leaderboard' : 'Rank on the Motion leaderboard', uDay(t0 * 1000) + ' to ' + uDay(t1 * 1000), DATA.tNow);
+  // one block per creator: name, rank now and the move over the last 24 hours
+  const bw = (CW - PAD * 2) / Math.max(MAIN.length, 2);
+  lines.forEach(({m, segs}, i) => {
+    const x = PAD + i * bw, last = segs[segs.length - 1], lp = last[last.length - 1];
+    const ago = last.find(p => Math.abs(p.time - (lp.time - 86400)) < 1200), d = ago ? ago.value - lp.value : null;
+    rr(g, x, 250, 6, 60, 3); g.fillStyle = m.col; g.fill();
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    if (one){ fnt(g, 600, 16); g.fillStyle = FOG; g.fillText(m.gone ? 'Last rank' : 'Rank now', x + 20, 272); } else { fnt(g, 700, 20); g.fillStyle = TXT; g.fillText(fit(g, m.name, bw - 40), x + 20, 272); }
+    g.fillStyle = TXT; fnt(g, 800, 26, null, 'semi-expanded'); const rk = '#' + lp.value; g.fillText(rk, x + 20, 306);
+    let w = x + 20 + g.measureText(rk).width + 14;
+    if (m.gone){ fnt(g, 600, 16); g.fillStyle = FOG; g.fillText('left the leaderboard', w, 304); }
+    else if (d != null){ fnt(g, 750, 17); g.fillStyle = mvCol(d); const t = mvTxt(d); g.fillText(t, w, 304); w += g.measureText(t).width + 7; fnt(g, 500, 16); g.fillStyle = FOG; g.fillText('in 24h', w, 304); }
+  });
+  const P = {x: PAD, y: 340, w: CW - PAD * 2, h: 476};
+  cardPanel(g, P.x, P.y, P.w, P.h);
+  const m = {l: P.x + 74, r: P.x + P.w - 104, t: P.y + 30, b: P.y + P.h - 54}, iw = m.r - m.l, ih = m.b - m.t;
+  const vals = lines.flatMap(l => l.segs.flat().filter(vis).map(p => p.value));
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = Math.max(1.5, (hi - lo) * .1); lo = Math.max(1, lo - pad); hi = hi + pad; if (hi - lo < 6){ hi = lo + 6; }
+  const X = t => m.l + (t - t0) / (t1 - t0) * iw, Y = v => m.t + (v - lo) / (hi - lo) * ih;
+  // rank grid, #1 at the top
+  g.lineWidth = 1; fnt(g, 600, 14); g.textBaseline = 'middle'; g.textAlign = 'right';
+  const ys = niceStep(hi - lo, 5);
+  for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys){ if (v < 1) continue; g.strokeStyle = '#151d45'; g.beginPath(); g.moveTo(m.l, Math.round(Y(v)) + .5); g.lineTo(m.r, Math.round(Y(v)) + .5); g.stroke(); g.fillStyle = '#5d6a8c'; g.fillText('#' + v, m.l - 14, Y(v)); }
+  // time ticks in UTC
+  const span = t1 - t0, step = [4, 8, 12, 24, 48, 168].map(h => h * 3600).find(s => span / s <= 8) || 336 * 3600;
+  g.textBaseline = 'alphabetic'; g.textAlign = 'center';
+  for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step){
+    const x = X(t), mid = t % 86400 === 0;
+    g.strokeStyle = mid ? '#1c2550' : '#121a3d'; g.beginPath(); g.moveTo(Math.round(x) + .5, m.t); g.lineTo(Math.round(x) + .5, m.b); g.stroke();
+    fnt(g, mid ? 700 : 500, 14); g.fillStyle = mid ? '#8e9bb8' : '#5d6a8c'; g.fillText(step >= 86400 || mid ? uDayS(t * 1000) : uHM(t * 1000), x, m.b + 26);
+  }
+  fnt(g, 500, 13); g.fillStyle = '#5d6a8c'; g.textAlign = 'right'; g.fillText('UTC', m.r, m.b + 46);
+  // lines with a soft glow, clipped to the plot
+  g.save(); g.beginPath(); g.rect(m.l - 8, m.t - 8, iw + 16, ih + 16); g.clip();
+  const ends = [];
+  lines.slice().reverse().forEach(({m: s, segs}) => {
+    for (const seg of segs){
+      const i0 = seg.findIndex(vis); if (i0 < 0) continue;
+      let i1 = seg.length - 1; while (i1 > i0 && !vis(seg[i1])) i1--;
+      const part = seg.slice(Math.max(0, i0 - 1), Math.min(seg.length, i1 + 2));
+      for (const [w, a] of [[10, '24'], [3.2, '']]){
+        g.strokeStyle = s.col + a; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round';
+        g.beginPath(); part.forEach((p, k) => k ? g.lineTo(X(p.time), Y(p.value)) : g.moveTo(X(p.time), Y(p.value))); g.stroke();
+      }
+    }
+    const last = segs.flat().filter(vis).pop(); if (last) ends.push({s, p: last});
+  });
+  g.restore();
+  // end labels: a dot on the last point and a pill with the rank, nudged apart so they never overlap
+  ends.sort((a, b) => Y(a.p.value) - Y(b.p.value));
+  let prevY = -Infinity;
+  for (const e of ends){ e.y = Math.max(Y(e.p.value), prevY + 32); prevY = e.y; }
+  const over = ends.length ? ends[ends.length - 1].y - (m.b + 10) : 0; if (over > 0) ends.forEach(e => e.y -= over);
+  for (const e of ends){
+    const x = X(e.p.time), y = Y(e.p.value), px = m.r + 16;
+    g.strokeStyle = e.s.col + '88'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x + 8, y); g.lineTo(px - 2, e.y); g.stroke();
+    g.beginPath(); g.arc(x, y, 7, 0, 7); g.fillStyle = e.s.col; g.fill(); g.lineWidth = 3; g.strokeStyle = '#0b1029'; g.stroke();
+    fnt(g, 800, 16, null, 'semi-expanded'); const t = '#' + e.p.value, tw = g.measureText(t).width;
+    rr(g, px, e.y - 14, tw + 22, 28, 14); g.fillStyle = e.s.col; g.fill();
+    g.fillStyle = INK; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(t, px + 11, e.y + 1);
+  }
+  cardFoot(g);
+  return c;
+}
+
+let SHOT = null;
+async function shareImage(kind){
+  if (!DATA || (kind === 'chart' && !MAIN.length)) return;
+  hideTip(); await cardFonts();
+  let c, t;
+  if (kind === 'radar'){
+    const f = REPLAY ? Object.assign({fixedY: REPLAY.fixedY}, REPLAY.frames[REPLAY.k]) : {rows: DATA.rows, N: DATA.N, t: DATA.tNow, trails: DATA.trails};
+    c = radarCard(f); t = f.t;
+  } else { c = chartCard(); t = DATA.tNow; }
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  if (!blob){ toast('Could not make the image'); return; }
+  const stamp = new Date(t).toISOString().slice(0, 16).replace('T', '-').replace(':', '');
+  if (SHOT) URL.revokeObjectURL(SHOT.url);
+  SHOT = {blob, url: URL.createObjectURL(blob), name: 'motion-radar-' + kind + '-' + stamp + '.png'};
+  $('shotImg').src = SHOT.url;
+  $('shotImg').alt = kind === 'radar' ? 'Share image of the Motion Radar chart' : 'Share image of the rank chart';
+  let canShare = false; try { canShare = !!(navigator.canShare && navigator.canShare({files: [new File([blob], SHOT.name, {type: 'image/png'})]})); } catch(e) {}
+  $('shotShare').hidden = !canShare;
+  $('shotCopy').hidden = !(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write);
+  $('shot').showModal();
+}
+$('saveR').onclick = () => shareImage('radar');
+$('saveC').onclick = () => shareImage('chart');
+$('shotClose').onclick = () => $('shot').close();
+$('shot').addEventListener('click', e => { if (e.target === $('shot')) $('shot').close(); });
+$('shotSave').onclick = () => { const a = document.createElement('a'); a.href = SHOT.url; a.download = SHOT.name; document.body.appendChild(a); a.click(); a.remove(); };
+$('shotCopy').onclick = async () => {
+  const b = $('shotCopy'), say = t => { b.textContent = t; clearTimeout(b.h); b.h = setTimeout(() => b.textContent = 'Copy image', 2200); };
+  try { await navigator.clipboard.write([new ClipboardItem({'image/png': SHOT.blob})]); say('Copied'); } catch(e) { say('Copy blocked, use Download'); }
+};
+$('shotShare').onclick = async () => { try { await navigator.share({files: [new File([SHOT.blob], SHOT.name, {type: 'image/png'})]}); } catch(e) {} };
 
 /* ---------- routing & events ---------- */
 let VIEW = 'radar';
@@ -797,10 +1170,16 @@ function show(v){
   document.querySelectorAll('.tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
   if (v === 'charts') refreshCharts();
   if (v === 'history' && DATA) matrix();
+  remember();
 }
 function route(){
   if (!DATA){ show('radar'); return; }
-  const h = decodeURIComponent(location.hash.slice(1));
+  let h = decodeURIComponent(location.hash.slice(1));
+  if (!h){
+    let L = null; try { L = JSON.parse(localStorage.getItem('mr-last') || 'null'); } catch(e) {}
+    if (L && L.v === 'charts'){ h = 'charts' + (L.sel && L.sel.length ? '=' + L.sel.join(',') : ''); history.replaceState(null, '', '#charts' + (L.sel && L.sel.length ? '=' + L.sel.map(encodeURIComponent).join(',') : '')); }
+    else if (L && L.v === 'history'){ h = 'history'; history.replaceState(null, '', '#history'); }
+  }
   if (h.startsWith('charts')){
     const want = h.indexOf('=') > 0 ? h.slice(h.indexOf('=') + 1).split(',') : [];
     const byName = {}; for (const id in DATA.names) byName[DATA.names[id].toLowerCase()] = id;
@@ -811,11 +1190,18 @@ function route(){
   } else show(h === 'history' ? 'history' : 'radar');
 }
 document.querySelectorAll('.tabs [role=tab]').forEach(b => b.onclick = () => { const v = b.dataset.v; if (v === 'charts') syncHash(); else history.replaceState(null, '', '#' + v); show(v); });
-document.addEventListener('click', e => { const t = e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); });
-document.addEventListener('keydown', e => { if (e.key === 'Enter'){ const t = e.target.closest && e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); } });
+document.addEventListener('click', e => { if (e.target.closest('[data-pin]')) return; const t = e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter'){ if (e.target.closest && e.target.closest('[data-pin]')) return; const t = e.target.closest && e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); } });
 document.querySelectorAll('#win button').forEach(b => b.onclick = async () => { document.querySelectorAll('#win button').forEach(x => x.classList.toggle('on', x === b)); WIN = +b.dataset.w; if (!WIN && !ALL_LOADED) await loadAll(); render(); });
 document.querySelectorAll('#hcols button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hcols button').forEach(x => x.classList.toggle('on', x === b)); HCOLS = +b.dataset.c; if (!HCOLS && !ALL_LOADED) await loadAll(); matrix(); });
-$('hleft').onclick = () => { HLEFT = !HLEFT; $('hleft').setAttribute('aria-pressed', HLEFT); $('hleftw').classList.toggle('on', HLEFT); matrix(); };
+document.querySelectorAll('#hshow button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hshow button').forEach(x => x.classList.toggle('on', x === b)); HSHOW = b.dataset.s; if (HSHOW === 'left' && !ALL_LOADED) await loadAll(); matrix(); });
+$('matrix').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (b) togglePin(b.dataset.pin); });
+$('trails').onclick = () => {
+  TRAILS = !TRAILS; try { localStorage.setItem('mr-trails', TRAILS ? '1' : '0'); } catch(e) {}
+  $('trails').setAttribute('aria-pressed', TRAILS); $('trailw').classList.toggle('on', TRAILS); sLegend();
+  if (REPLAY) showFrame(REPLAY.k, 0); else if (DATA) paintScatter(DATA.rows, DATA.N, null, 0, DATA.trails);
+};
+$('trails').setAttribute('aria-pressed', TRAILS); $('trailw').classList.toggle('on', TRAILS);
 $('tq').oninput = e => { TQ = e.target.value; table(); };
 $('hq').oninput = e => { HQ = e.target.value; matrix(); };
 $('hsort').onchange = e => { HSORT = e.target.value; matrix(); };
@@ -870,7 +1256,7 @@ $('setb').onclick = e => { e.stopPropagation(); const open = $('setp').hidden; $
 document.addEventListener('click', e => { if (!$('setp').hidden && !e.target.closest('.setw')){ $('setp').hidden = true; $('setb').setAttribute('aria-expanded', false); } });
 $('replay').onclick = () => REPLAY ? stopReplay() : startReplay();
 window.addEventListener('hashchange', () => { if (DATA) route(); });
-let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { if (DATA && VIEW === 'radar' && !REPLAY){ $('scatter').innerHTML = scatter(DATA.rows, DATA.N); bindScatter(DATA.rows); } }, 200); });
+let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => { if (DATA && VIEW === 'radar' && !REPLAY){ $('scatter').innerHTML = scatter(DATA.rows, DATA.N, null, DATA.trails); bindScatter(DATA.rows); } }, 200); });
 load();
 </script>
 </body>
