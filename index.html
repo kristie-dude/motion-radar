@@ -170,6 +170,8 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 .bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);margin-bottom:12px}
 .bar .grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bar .lbl{color:var(--fog);font-size:13px}
+.qp{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:-4px 0 14px}
+.qp .lbl{color:var(--fog);font-size:13px}
 .setw{margin-left:auto;position:relative}
 .btn.sm{padding:6px 14px;font-size:13px}
 .setp{position:absolute;right:0;top:calc(100% + 8px);z-index:25;background:#0d1433;border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:10px;min-width:250px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
@@ -246,8 +248,8 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
 .shot-act{display:flex;gap:8px;flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.trail{animation:none}dialog#shot[open]{animation:none}}
 /* info buttons and their hover cards */
-.info{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--fog);display:inline-grid;place-items:center;cursor:help;padding:0;margin-left:2px;flex:none;transition:color .12s,border-color .12s,background .12s}
-.info:hover,.info:focus-visible,.info[aria-expanded=true]{color:var(--ink);background:var(--cyan);border-color:var(--cyan)}
+.info,.tog .info{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(0,216,244,.6);background:rgba(0,216,244,.14);color:var(--cyan);display:inline-grid;place-items:center;cursor:help;padding:0;margin-left:2px;flex:none;transition:color .12s,border-color .12s,background .12s}
+.info:hover,.info:focus-visible,.info[aria-expanded=true],.tog .info:hover,.tog .info:focus-visible,.tog .info[aria-expanded=true]{color:var(--ink);background:var(--cyan);border-color:var(--cyan)}
 #itip{position:fixed;z-index:55;width:290px;max-width:calc(100vw - 24px);background:#0d1433;border:1px solid #26305e;border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--fog);box-shadow:0 18px 40px rgba(0,0,0,.55);display:none}
 #itip.on{display:block;animation:fadein .14s ease-out}
 #itip b{display:block;color:var(--text);font-size:14px;margin-bottom:3px}
@@ -308,8 +310,9 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
     <div class="head"><h2>Rank charts</h2>
       <div class="tools">
         <div class="pick"><input class="search" id="q" placeholder="Pick or search a creator" autocomplete="off" aria-label="Pick or search a creator to add" aria-controls="sug" aria-expanded="false"><div id="sug" role="listbox"></div></div>
-        <button class="btn" id="addTop" title="Replace the chart with the 3 biggest climbers">Show top climbers</button><button class="btn" id="addCheap" title="Replace the chart with the 3 best cheap and rising creators">Show cheap and rising</button><button class="btn" id="clr">Clear</button>
+        <button class="btn" id="clr">Clear</button>
       </div></div>
+    <div class="qp"><span class="lbl">Quick picks</span><button class="btn sm" id="addTop" title="Replace the chart with the 3 biggest climbers">Top climbers</button><button class="btn sm" id="addCheap" title="Replace the chart with the 3 best cheap and rising creators">Cheap and rising</button><span class="lbl">over</span><div class="seg sm" id="win2" aria-label="Time window for quick picks"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div>
     <div class="chips" id="chips"></div>
     <div class="bar">
       <div class="grp"><span class="lbl">On the lines</span>
@@ -1198,7 +1201,14 @@ function route(){
 document.querySelectorAll('.tabs [role=tab]').forEach(b => b.onclick = () => { const v = b.dataset.v; if (v === 'charts') syncHash(); else history.replaceState(null, '', '#' + v); show(v); });
 document.addEventListener('click', e => { if (e.target.closest('[data-pin]')) return; const t = e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); });
 document.addEventListener('keydown', e => { if (e.key === 'Enter'){ if (e.target.closest && e.target.closest('[data-pin]')) return; const t = e.target.closest && e.target.closest('[data-open]'); if (t) openChart([t.dataset.open]); } });
-document.querySelectorAll('#win button').forEach(b => b.onclick = async () => { document.querySelectorAll('#win button').forEach(x => x.classList.toggle('on', x === b)); WIN = +b.dataset.w; if (!WIN && !ALL_LOADED) await loadAll(); render(); });
+/* the Radar window and the Charts quick-pick window are the same setting, so they always match */
+document.querySelectorAll('#win button, #win2 button').forEach(b => b.onclick = async () => {
+  WIN = +b.dataset.w;
+  document.querySelectorAll('#win button, #win2 button').forEach(x => x.classList.toggle('on', +x.dataset.w === WIN));
+  if (!WIN && !ALL_LOADED) await loadAll();
+  render();
+  if (QP && SEL.join() === QP.key) QP.run();
+});
 document.querySelectorAll('#hcols button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hcols button').forEach(x => x.classList.toggle('on', x === b)); HCOLS = +b.dataset.c; if (!HCOLS && !ALL_LOADED) await loadAll(); matrix(); });
 document.querySelectorAll('#hshow button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hshow button').forEach(x => x.classList.toggle('on', x === b)); HSHOW = b.dataset.s; if (HSHOW === 'left' && !ALL_LOADED) await loadAll(); matrix(); });
 $('matrix').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (b) togglePin(b.dataset.pin); });
@@ -1247,9 +1257,12 @@ q.onkeydown = e => {
 q.onblur = () => setTimeout(closeSug, 120);
 /* quick picks replace what's on the chart, so the button always does what it says */
 const winTxt = () => WIN === 4 ? 'the last 4 hours' : WIN === 24 ? 'the last 24 hours' : WIN === 72 ? 'the last 3 days' : 'all saved history';
-function quickPick(list, none){ if (!list.length){ toast(none + ' in ' + winTxt()); return; } SEL = []; addSel(list.slice(0, 3).map(r => r.id)); }
-$('addTop').onclick = () => quickPick(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw), 'Nobody climbed');
-$('addCheap').onclick = () => quickPick(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat), 'Nobody is cheap and rising');
+let QP = null;
+function quickPick(list, none, run){ if (!list.length){ toast(none + ' in ' + winTxt()); return; } SEL = []; addSel(list.slice(0, 3).map(r => r.id)); QP = {run, key: SEL.join()}; }
+const pickTop = () => quickPick(DATA.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw), 'Nobody climbed', pickTop);
+const pickCheap = () => quickPick(DATA.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat), 'Nobody is cheap and rising', pickCheap);
+$('addTop').onclick = pickTop;
+$('addCheap').onclick = pickCheap;
 /* the (i) buttons: hover or focus shows the explanation, a tap pins it open on phones */
 const INFO = {
   base: ['Star baseline', 'Average position over the last 14 days, the window Motion uses for stars. A rank line above it means the creator is doing better than their stars suggest.', 'It is measured as a share of the board, so it stays fair if the leaderboard grows.'],
