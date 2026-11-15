@@ -170,7 +170,16 @@ select.btn{appearance:none;padding-right:30px;background-image:linear-gradient(4
 .bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);margin-bottom:12px}
 .bar .grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bar .lbl{color:var(--fog);font-size:13px}
-.qp{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:-4px 0 14px}
+.qp{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px}
+.qp .lbl+.btn,.qp .lbl+.seg{margin-left:2px}
+.qp .setw{display:flex;gap:8px}
+/* every control at the top of Charts shares one height so the rows line up */
+#v-charts .head{margin-bottom:12px}
+#v-charts .head .search,#v-charts .head .btn,#v-charts .qp .btn{height:36px;padding:0 16px;display:inline-flex;align-items:center;font-size:14px;line-height:1}
+#v-charts .qp .seg{height:36px;padding:3px;align-items:stretch}
+#v-charts .qp .seg button{padding:0 14px;font-size:14px}
+#v-charts .chips{margin:0 0 12px}
+#v-charts .chips:empty{display:none}
 .qp .lbl{color:var(--fog);font-size:13px}
 .setw{margin-left:auto;position:relative}
 .btn.sm{padding:6px 14px;font-size:13px}
@@ -291,7 +300,7 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
       <div class="rbar" id="rbar" hidden><button class="play" id="rplay" aria-label="Pause"></button><input type="range" id="rslider" min="0" max="1" value="0" step="1" aria-label="Replay position"><span class="rtime" id="rtime" aria-live="polite"></span></div>
       <div class="plot" id="scatter"></div>
       <div class="legend" id="slegend"></div>
-      <p class="note">Each dot is a creator. Hover a dot to see who it is, or select it to open their chart. <b>Higher</b> means they climbed more places in the selected window. <b>Further right</b> means a lower average rank over the last 14 days, which usually means fewer stars. Creators with less than a day on the board are marked New and kept out of the pink corner. Turn on <b>Trails</b> to see where each dot was over the last three updates (12 hours), so you can tell who is speeding up and who is slowing down.</p>
+      <p class="note">Each dot is a creator. Hover a dot to see who it is, or select it to open their chart. <b>Higher</b> means they climbed more places in the selected window. <b>Further right</b> means a lower average rank over the last 14 days, which usually means fewer stars. Creators with less than a day on the board are marked New and kept out of the pink corner. The faint <b>trails</b> show where each dot was over the last three updates (12 hours), so you can tell who is speeding up and who is slowing down. The <b>Trails</b> button turns them off.</p>
     </article>
   <div class="trio">
     <article class="panel rail"><h3>Cheap and rising</h3><p class="sub hand pink">cold history, climbing now</p><ol id="l1"></ol></article>
@@ -312,7 +321,11 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
         <div class="pick"><input class="search" id="q" placeholder="Pick or search a creator" autocomplete="off" aria-label="Pick or search a creator to add" aria-controls="sug" aria-expanded="false"><div id="sug" role="listbox"></div></div>
         <button class="btn" id="clr">Clear</button>
       </div></div>
-    <div class="qp"><span class="lbl">Quick picks</span><button class="btn sm" id="addTop" title="Replace the chart with the 3 biggest climbers">Top climbers</button><button class="btn sm" id="addCheap" title="Replace the chart with the 3 best cheap and rising creators">Cheap and rising</button><span class="lbl">over</span><div class="seg sm" id="win2" aria-label="Time window for quick picks"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div></div>
+    <div class="qp"><span class="lbl">Quick picks</span><button class="btn" id="addTop" title="Replace the chart with the 3 biggest climbers">Top climbers</button><button class="btn" id="addCheap" title="Replace the chart with the 3 best cheap and rising creators">Cheap and rising</button><span class="lbl">over</span><div class="seg" id="win2" aria-label="Time window for quick picks"><button data-w="4">4h</button><button data-w="24" class="on">24h</button><button data-w="72">3 days</button><button data-w="0">All</button></div><div class="grp setw"><button class="btn sm" id="saveC" title="Make a picture of this chart to share">Save image</button><button class="btn sm" id="setb" aria-expanded="false" aria-controls="setp">Settings</button>
+        <div class="setp" id="setp" hidden>
+          <label><input type="checkbox" id="optLine"> Dotted line at the current rank</label>
+          <label><input type="checkbox" id="optDots"> Dot at each update</label>
+        </div></div></div>
     <div class="chips" id="chips"></div>
     <div class="bar">
       <div class="grp"><span class="lbl">On the lines</span>
@@ -324,11 +337,6 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
       <div class="grp"><span class="lbl">Lower panel</span>
         <div class="seg sm" id="lower" aria-label="Lower panel"><button data-l="heat">Heat</button><button data-l="chg">24h change</button><button data-l="off" class="on">Off</button></div><button class="info" type="button" data-info="lower" aria-label="What is this?"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="3" r="1.1" fill="currentColor"/><path d="M6 5.3v4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       </div>
-      <div class="grp setw"><button class="btn sm" id="saveC" title="Make a picture of this chart to share">Save image</button><button class="btn sm" id="setb" aria-expanded="false" aria-controls="setp">Settings</button>
-        <div class="setp" id="setp" hidden>
-          <label><input type="checkbox" id="optLine"> Dotted line at the current rank</label>
-          <label><input type="checkbox" id="optDots"> Dot at each update</label>
-        </div></div>
     </div>
     <div id="legend"></div>
     <div id="tv"></div>
@@ -516,7 +524,8 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; t.style.display 
 /* trails: where each creator's dot was in the previous few updates, oldest first */
 const TRAILN = 3;
 let TRAILS = false;
-try { TRAILS = localStorage.getItem('mr-trails') === '1'; } catch(e) {}
+TRAILS = true;
+try { TRAILS = localStorage.getItem('mr-trails2') !== '0'; } catch(e) {}
 function trailsFor(rows, prev){
   const maps = prev.map(f => new Map(f.rows.map(r => [r.id, [r.avg, r.chw]])));
   const out = new Map();
@@ -928,7 +937,7 @@ function ikey(){
   $('ikey').innerHTML = k.map(([g, l]) => '<span style="display:inline-flex;align-items:center;gap:7px">' + g + l + '</span>').join('') + (CROSSINFO ? '<span style="color:#5d6a8c">' + CROSSINFO + '</span>' : '');
 }
 function chips(){
-  $('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip" data-fid="' + id + '"><i style="background:' + SERIES[i] + '"></i>' + esc(DATA.names[id]) + '<button data-rm="' + id + '" aria-label="Remove ' + esc(DATA.names[id]) + '">×</button></span>').join('') : '<span class="sub">No creators picked yet. You can compare up to 4.</span>';
+  $('chips').innerHTML = SEL.length ? SEL.map((id, i) => '<span class="chip" data-fid="' + id + '"><i style="background:' + SERIES[i] + '"></i>' + esc(DATA.names[id]) + '<button data-rm="' + id + '" aria-label="Remove ' + esc(DATA.names[id]) + '">×</button></span>').join('') : '';
   document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { SEL = SEL.filter(x => x !== b.dataset.rm); syncHash(); refreshCharts(); });
 }
 function refreshCharts(){ if (!DATA) return; chips(); drawChart(); $('saveC').disabled = !MAIN.length; }
@@ -1213,7 +1222,7 @@ document.querySelectorAll('#hcols button').forEach(b => b.onclick = async () => 
 document.querySelectorAll('#hshow button').forEach(b => b.onclick = async () => { document.querySelectorAll('#hshow button').forEach(x => x.classList.toggle('on', x === b)); HSHOW = b.dataset.s; if (HSHOW === 'left' && !ALL_LOADED) await loadAll(); matrix(); });
 $('matrix').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (b) togglePin(b.dataset.pin); });
 $('trails').onclick = () => {
-  TRAILS = !TRAILS; try { localStorage.setItem('mr-trails', TRAILS ? '1' : '0'); } catch(e) {}
+  TRAILS = !TRAILS; try { localStorage.setItem('mr-trails2', TRAILS ? '1' : '0'); } catch(e) {}
   $('trails').setAttribute('aria-pressed', TRAILS); $('trailw').classList.toggle('on', TRAILS); sLegend();
   if (REPLAY) showFrame(REPLAY.k, 0); else if (DATA) paintScatter(DATA.rows, DATA.N, null, 0, DATA.trails);
 };
