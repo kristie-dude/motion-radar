@@ -429,6 +429,30 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
 @keyframes drawln{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 .lu-ch .dr{stroke-dasharray:1;animation:drawln 1.3s cubic-bezier(.3,.7,.3,1) both}
 @media(prefers-reduced-motion:reduce){.slot.fresh,.lu-ch .dr,.capring,.rw-clock.low .num{animation:none}.hist rect,.hist .you,.rw-bar i{transition:none}}
+
+/* motion rules */
+.sc{color:var(--cyan)}
+.st{color:#e0a326;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cand{grid-template-columns:40px 28px minmax(0,1fr) 34px 56px 44px 28px}
+@media(max-width:600px){.cand{grid-template-columns:34px 28px minmax(0,1fr) 30px 40px 26px}}
+.smeter{display:flex;align-items:center;gap:14px;margin:-4px 0 14px;font-size:14px;color:var(--fog)}
+.smeter b{color:var(--text);font-size:16px}
+.smeter i{flex:1;max-width:320px;height:8px;border-radius:4px;background:var(--line-soft);overflow:hidden}
+.smeter i b{display:block;height:100%;background:#e0a326;border-radius:4px;transition:width .3s}
+.smeter.over{color:var(--down)}.smeter.over i b{background:var(--down)}
+.rw-slots{grid-template-columns:repeat(5,minmax(0,1fr))}
+.rw-slots .slot,#slots .slot{min-height:150px}
+#slots .slot.none,.rw-slots .slot.none{min-height:150px}
+.rar select{background:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12.5px;color:var(--fog);margin-top:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.sub2{color:#e0a326;font-size:12.5px;font-weight:650}
+.lu .nwrap{flex-direction:column;align-items:flex-start;gap:2px}
+.rw-bar:before{display:none}
+.rw-bar em{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#232d5c}
+.rw-bar i.pos,.rw-bar i{left:0;right:auto;background:var(--cyan)}
+@media(max-width:600px){#v-sim .bar .grp{min-width:0;max-width:100%;flex-wrap:nowrap}#rwf,#sfilt{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none}#rwf::-webkit-scrollbar,#sfilt::-webkit-scrollbar{display:none}}
+.rw-res-g b.sc,.rw-big b.sc,.rw-sc b.sc{color:var(--cyan)}
+@media(max-width:600px){.rw-slots{grid-template-columns:1fr}.rw-slots .slot,#slots .slot{min-height:0}.rw-slots .slot.none,#slots .slot.none{min-height:52px}#slots{grid-template-columns:1fr}#slots .slot{flex-direction:row;text-align:left;padding:12px 44px 12px 12px;gap:12px;flex-wrap:wrap}.smeter i{max-width:none}}
 </style>
 </head>
 <body>
@@ -523,18 +547,19 @@ dialog#shot::backdrop{background:rgba(5,8,18,.78);backdrop-filter:blur(4px);-web
   <article class="panel" id="rwp"><div id="rwBox"></div></article>
   <div id="lup" hidden>
   <article class="panel">
-    <div class="head"><div><h2>Lineup simulator</h2><p class="sub">Pick up to 5 creators, lock them in and score every place they climb.</p></div>
+    <div class="head"><div><h2>Lineup simulator</h2><p class="sub">Draft 5 Creators within 32 stars, the Motion way, and track their estimated score.</p></div>
       <div class="grp"><span class="lbl">Start from</span><div class="seg sm" id="sstart" aria-label="Start the lineup from"><button data-s="now" class="on">Now</button><button data-s="24">1 day ago</button><button data-s="72">3 days ago</button><button data-s="first">First update</button></div></div></div>
-    <div class="rw-quick"><span class="lbl">Quick</span><button class="btn" data-squick="hot">Hot hand</button><button class="btn" data-squick="cheap">Cheap and rising</button><button class="btn" data-squick="rand">Random 5</button></div>
+    <div class="rw-quick"><span class="lbl">Quick</span><button class="btn" data-squick="top">Top ranked</button><button class="btn" data-squick="hot">Hot hand</button><button class="btn" data-squick="cheap">Cheap and rising</button><button class="btn" data-squick="rand">Random 5</button></div>
     <div class="slots" id="slots"></div>
+    <div id="sstars"></div>
     <div class="lockbar"><p class="sub" id="lockTxt"></p><button class="btn pri" id="lock" disabled>Lock lineup</button></div>
     <div class="bar"><div class="grp"><input class="search" id="sq" type="search" placeholder="Find a creator" aria-label="Find a creator to add"></div>
-      <div class="grp"><span class="lbl">Show</span><div class="seg sm" id="sfilt" aria-label="Which creators to list"><button data-f="rank" class="on">By rank</button><button data-f="up">Climbing</button><button data-f="cheap">Cheap and rising</button></div></div></div>
+      <div class="grp"><span class="lbl">Show</span><div class="seg sm" id="sfilt" aria-label="Which creators to list"><button data-f="rank" class="on">By rank</button><button data-f="stars">Fewest stars</button><button data-f="up">Climbing</button><button data-f="cheap">Cheap and rising</button></div></div></div>
     <div class="cands" id="cands"></div>
-    <p class="note"><b>How scoring works.</b> Your lineup locks at an update. From then on, each place a pick climbs is +1 point and each place it falls is −1, counted from its rank when you locked. Your captain counts double. A pick who leaves the leaderboard counts as one place below last. <b>Practice</b> runs start from an earlier update, so you get the result straight away. Your score is compared with 5,000 random lineups of the same size, picked at the same update, and with the best lineup you could have picked. Lineups are saved in this browser only.</p>
+    <p class="note"><b>How it works.</b> These are Motion's lineup rules: exactly five different Creators, and their stars together can't go over the cap of 32. Each card's rarity multiplies its score: Common 1×, Rare 1.5×, Epic 2×, Legendary 2.5×. Set them to match the cards you own. Motion also limits the rarity mix, but it hasn't published those limits, so this doesn't check them. <b>The score is an estimate.</b> Motion scores real engagement on X, Instagram, TikTok and YouTube, with #1 earning 1,000, and it doesn't publish the full formula. Here each update gives points by rank instead: #1 earns 1,000 and the last place 0. A pick's score is its average since the lock. Stars run from 1 to 8 and are estimated from each Creator's 14-day average rank, the same window Motion uses. <b>Practice</b> runs start from an earlier update and score straight away. Lineups are saved in this browser only.</p>
   </article>
   <article class="panel" id="mylw" hidden>
-    <div class="head"><h2>My lineups</h2><span class="sub">Saved in this browser, up to 8</span></div>
+    <div class="head"><h2>My lineups</h2><span class="sub">Saved in this browser, up to 8. Estimated scores.</span></div>
     <div id="myl"></div>
   </article>
   </div>
@@ -1360,17 +1385,21 @@ $('shotCopy').onclick = async () => {
 };
 $('shotShare').onclick = async () => { try { await navigator.share({files: [new File([SHOT.blob], SHOT.name, {type: 'image/png'})]}); } catch(e) {} };
 
-/* ---------- lineup simulator ---------- */
-/* a lineup freezes each pick's rank at one update; every place climbed after that is +1, every place fallen −1, the captain counts double */
-const SIM_MAX = 5, SIM_KEEP = 8, SIM_RUNS = 5000;
+/* ---------- simulator: Motion's lineup rules, with estimated scores ---------- */
+/* Motion: 5 different Creators, total stars within the cap (32), Lineup Score = sum of Motion Score x card Score Boost, #1 earns 1,000.
+   We only see ranks, so each update's points are estimated from rank, and stars (1-8) from the 14-day average rank, split into 8 equal groups. */
+const SIM_PICKS = 5, STAR_CAP = 32, SIM_KEEP = 8, SIM_RUNS = 5000, SCORE_COL = '#00d8f4';
+const RARITY = [['Common', 1], ['Rare', 1.5], ['Epic', 2], ['Legendary', 2.5]];
 let SIMRK = null, SIMRK_KEY = '', SIMF = {}, SEEN0 = null, LINEUPS = [];
-const DRAFT = {picks: [], cap: null, start: 'now', q: '', f: 'rank'};
-try { LINEUPS = JSON.parse(localStorage.getItem('mr-lineups') || '[]').filter(L => L && L.picks && L.picks.length); } catch(e) { LINEUPS = []; }
-try { const d = JSON.parse(localStorage.getItem('mr-draft') || 'null'); if (d) Object.assign(DRAFT, {picks: d.picks || [], cap: d.cap || null, start: d.start || 'now', f: d.f || 'rank'}); } catch(e) {}
-const saveLineups = () => { try { localStorage.setItem('mr-lineups', JSON.stringify(LINEUPS)); } catch(e) {} };
-const saveDraft = () => { try { localStorage.setItem('mr-draft', JSON.stringify({picks: DRAFT.picks, cap: DRAFT.cap, start: DRAFT.start, f: DRAFT.f})); } catch(e) {} };
-const sg = v => v > 0 ? '+' + v : v < 0 ? '−' + (-v) : '0';
+const DRAFT = {picks: [], boost: {}, start: 'now', q: '', f: 'rank', fresh: null};
+try { LINEUPS = JSON.parse(localStorage.getItem('mr-lineups2') || '[]').filter(L => L && L.picks && L.picks.length === SIM_PICKS); } catch(e) { LINEUPS = []; }
+try { const d = JSON.parse(localStorage.getItem('mr-draft2') || 'null'); if (d) Object.assign(DRAFT, {picks: d.picks || [], boost: d.boost || {}, start: d.start || 'now', f: d.f || 'rank'}); } catch(e) {}
+const saveLineups = () => { try { localStorage.setItem('mr-lineups2', JSON.stringify(LINEUPS)); } catch(e) {} };
+const saveDraft = () => { try { localStorage.setItem('mr-draft2', JSON.stringify({picks: DRAFT.picks, boost: DRAFT.boost, start: DRAFT.start, f: DRAFT.f})); } catch(e) {} };
+const nf = v => Math.round(v).toLocaleString('en-US');
+const sg = v => v > 0 ? '+' + nf(v) : v < 0 ? '−' + nf(-v) : '0';
 const sameT = (a, b) => Math.abs(a - b) < 60e3;
+const boostOf = i => RARITY[i || 0][1];
 
 /* rank of every creator at every update, rebuilt only when a new update arrives */
 function simRanks(){
@@ -1382,6 +1411,10 @@ function simRanks(){
   return SIMRK;
 }
 const rankAt = (s, id) => s.m.has(id) ? s.m.get(id) : s.N + 1;
+/* estimated points at one update: #1 earns 1,000, the last place 0, off the board 0 */
+const ptsAt = (s, id) => s.m.has(id) && s.N > 1 ? 1000 * (s.N - s.m.get(id)) / (s.N - 1) : 0;
+/* a pick's score over a stretch: the average of its points at every update after the lock */
+function winPts(i0, i1, id){ const R = simRanks(); if (i1 <= i0) return 0; let s = 0; for (let j = i0 + 1; j <= i1; j++) s += ptsAt(R[j], id); return s / (i1 - i0); }
 function startIdx(opt){
   const R = simRanks(), L = R.length - 1;
   if (opt === 'now') return L;
@@ -1390,79 +1423,133 @@ function startIdx(opt){
   for (let i = 0; i <= L; i++) if (R[i].t <= want + 15 * 60e3) k = i;
   return k;
 }
-/* the board as it looked at update k, with 24-hour moves, so practice picks never see the future */
+/* the board as it looked at update k: 24-hour moves and estimated stars, so practice picks never see the future */
 function simFrame(k){
   simRanks();
-  if (!SIMF[k]){ const w = WIN; WIN = 24; SIMF[k] = build(k); WIN = w; }
+  if (!SIMF[k]){
+    const w = WIN; WIN = 24; const F = build(k); WIN = w;
+    const ord = F.rows.slice().sort((a, b) => a.avg - b.avg || a.rank - b.rank), n = ord.length;
+    F.stars = new Map();
+    ord.forEach((r, i) => { r.stars = 8 - Math.floor(i * 8 / n); F.stars.set(r.id, r.stars); });
+    SIMF[k] = F;
+  }
   return SIMF[k];
 }
 function mulberry(a){ return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const strHash = s => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+/* the best possible 5 in hindsight, within the star cap */
+function bestPick(items, n){
+  const C = STAR_CAP, W = C + 1, dp = [];
+  for (let c = 0; c <= n; c++) dp.push(new Float64Array(W).fill(-Infinity));
+  dp[0][0] = 0;
+  const take = new Uint8Array(items.length * (n + 1) * W);
+  items.forEach((it, i) => { for (let c = n; c >= 1; c--) for (let s = C; s >= it.st; s--){ const v = dp[c - 1][s - it.st] + it.v; if (v > dp[c][s]){ dp[c][s] = v; take[(i * (n + 1) + c) * W + s] = 1; } } });
+  let s = 0; for (let x = 1; x <= C; x++) if (dp[n][x] > dp[n][s]) s = x;
+  const v = dp[n][s], ids = []; let c = n;
+  for (let i = items.length - 1; i >= 0 && c > 0; i--) if (take[(i * (n + 1) + c) * W + s]){ ids.push(items[i].id); c--; s -= items[i].st; }
+  return {v: isFinite(v) ? v : 0, ids};
+}
+/* random lineups that obey the same rules: 5 different Creators within the star cap */
+function randScores(items, n, rnd, T){
+  const out = new Float64Array(T), idx = items.map((_, i) => i);
+  for (let t = 0; t < T; t++){
+    let tries = 0, s, st;
+    do {
+      s = 0; st = 0;
+      for (let j = 0; j < n; j++){ const r = j + Math.floor(rnd() * (idx.length - j)); const x = idx[j]; idx[j] = idx[r]; idx[r] = x; s += items[idx[j]].v; st += items[idx[j]].st; }
+    } while (st > STAR_CAP && ++tries < 40);
+    out[t] = s;
+  }
+  return out;
+}
+const pctOf = (arr, you) => { let b = 0; for (const v of arr) if (v < you - 1e-9) b++; else if (Math.abs(v - you) < 1e-9) b += .5; return Math.round(b / arr.length * 100); };
+/* quick picks fill all five, always within the star cap */
+function quickList(F, kind, rnd = Math.random){
+  const L = F.rows.slice();
+  if (kind === 'top') return L.sort((a, b) => a.rank - b.rank);
+  if (kind === 'hot') return L.sort((a, b) => b.chw - a.chw || a.rank - b.rank);
+  if (kind === 'cheap') return L.sort((a, b) => (b.cheap && b.chw >= 2) - (a.cheap && a.chw >= 2) || b.heat - a.heat);
+  for (let i = L.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); const x = L[i]; L[i] = L[j]; L[j] = x; }
+  return L;
+}
+function capFill(F, list, keep){
+  const out = keep.slice(); let sum = out.reduce((a, id) => a + (F.stars.get(id) || 1), 0);
+  for (const r of list){
+    if (out.length >= SIM_PICKS) break;
+    if (out.includes(r.id)) continue;
+    if (sum + r.stars + (SIM_PICKS - out.length - 1) <= STAR_CAP){ out.push(r.id); sum += r.stars; }
+  }
+  return out;
+}
+const starSum = (F, ids) => ids.reduce((a, id) => a + (F.stars.get(id) || 0), 0);
+function starMeter(used){
+  const over = used > STAR_CAP;
+  return '<div class="smeter' + (over ? ' over' : '') + '"><span>Stars <b>' + used + '</b> of ' + STAR_CAP + (over ? ', over the cap' : '') + '</span><i><b style="width:' + Math.min(100, used / STAR_CAP * 100).toFixed(1) + '%"></b></i></div>';
+}
+function candRows(F, picks, q, f, attr){
+  const v = q.trim().toLowerCase(), used = starSum(F, picks), full = picks.length >= SIM_PICKS;
+  let list = F.rows.filter(x => !v || x.name.toLowerCase().includes(v));
+  if (f === 'up') list = list.filter(x => x.chw > 0).sort((a, b) => b.chw - a.chw);
+  else if (f === 'cheap') list = list.filter(x => x.cheap && x.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat);
+  else if (f === 'stars') list.sort((a, b) => a.stars - b.stars || a.rank - b.rank);
+  else list.sort((a, b) => a.rank - b.rank);
+  if (!list.length) return '<p class="empty">' + (v ? 'No creator matches that name.' : 'Nobody fits at this update.') + '</p>';
+  return list.map(x => { const on = picks.includes(x.id), off = !on && (full || used + x.stars > STAR_CAP);
+    return '<div class="cand' + (on ? ' on' : off ? ' off' : '') + '" role="button" tabindex="0" ' + attr + '="' + x.id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove ' : 'Pick ') + esc(x.name) + ', rank ' + x.rank + ', ' + x.stars + ' stars"' + (off && !full ? ' title="Over the ' + STAR_CAP + '-star cap"' : '') + '><span class="rk">#' + x.rank + '</span>' + avatar(x.name, 28, x.chw) +
+      '<span class="nm">' + esc(x.name) + badge(x) + (x.cheap && x.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</span><span class="st">★' + x.stars + '</span>' + spark(x.seg.filter(q => q.t >= F.tNow - 72 * H), F.N) +
+      '<span class="mv ' + cls(x.chw) + '">' + (x.chw ? fmt(x.chw) : '·') + '</span><span class="add" aria-hidden="true">' + (on ? '✓' : '+') + '</span></div>'; }).join('');
+}
 
+/* ---- live lineups ---- */
 function scoreLineup(L){
   const R = simRanks(), ts = Date.parse(L.start), i0 = R.findIndex(s => sameT(s.t, ts));
   if (i0 < 0) return null;
-  const w = id => id === L.cap ? 2 : 1, last = R[R.length - 1], series = [];
-  for (let k = i0; k < R.length; k++){
-    let s = 0; for (const p of L.picks) s += w(p.id) * (p.r0 - rankAt(R[k], p.id));
-    series.push({t: R[k].t, s});
-  }
+  const last = R.length - 1, b = id => boostOf((L.picks.find(p => p.id === id) || {}).boost);
+  const series = [];
+  // the line starts at the first scored update; before it there is nothing to average
+  for (let k = Math.min(i0 + 1, last); k <= last; k++){ let s = 0; for (const p of L.picks) s += boostOf(p.boost) * winPts(i0, k, p.id); series.push({t: R[k].t, s}); }
   const picks = L.picks.map(p => {
-    const rn = rankAt(last, p.id), path = [];
-    for (let k = i0; k < R.length; k++) path.push({t: R[k].t, r: rankAt(R[k], p.id)});
-    return {id: p.id, name: p.name, r0: p.r0, rn, gone: !last.m.has(p.id), cap: p.id === L.cap, pts: w(p.id) * (p.r0 - rn), path};
+    const path = []; for (let k = i0; k <= last; k++) path.push({t: R[k].t, r: rankAt(R[k], p.id)});
+    const base = winPts(i0, last, p.id);
+    return {id: p.id, name: p.name, r0: p.r0, rn: rankAt(R[last], p.id), gone: !R[last].m.has(p.id), stars: p.stars, boost: p.boost || 0, base, pts: base * boostOf(p.boost), path};
   });
-  const score = series[series.length - 1].s, n = series.length - 1, m = L.picks.length;
+  const score = series[series.length - 1].s, n = last - i0, baseScore = picks.reduce((a, p) => a + p.base, 0);
   let pct = null, best = null;
   if (n > 0){
-    // everyone on the board at the lock, and how far each one moved since
-    const c = [...R[i0].m.entries()].map(([id, r0]) => r0 - rankAt(last, id));
-    const top = c.slice().sort((a, b) => b - a).slice(0, m);
-    best = top.reduce((a, b) => a + b, 0) + top[0];
-    // the same random lineups every time this lineup is shown at this update
-    let h = 2166136261; for (const ch of L.id + last.asOf) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-    const rnd = mulberry(h >>> 0), idx = c.map((_, i) => i);
-    let below = 0;
-    for (let t = 0; t < SIM_RUNS; t++){
-      let s = 0;
-      for (let j = 0; j < m; j++){ const r = j + Math.floor(rnd() * (idx.length - j)); const x = idx[j]; idx[j] = idx[r]; idx[r] = x; s += c[idx[j]]; }
-      s += c[idx[Math.floor(rnd() * m)]];
-      if (s < score) below++; else if (s === score) below += .5;
-    }
-    pct = Math.round(below / SIM_RUNS * 100);
+    const F = simFrame(i0), items = [...R[i0].m.keys()].map(id => ({id, v: winPts(i0, last, id), st: F.stars.get(id) || 1}));
+    best = bestPick(items, SIM_PICKS);
+    pct = pctOf(randScores(items, SIM_PICKS, mulberry(strHash(L.id + R[last].asOf)), SIM_RUNS), baseScore);
   }
-  return {i0, series, picks, score, n, pct, best};
+  return {i0, series, picks, score, baseScore, n, pct, best, boosted: L.picks.some(p => p.boost)};
 }
-
 function simToggle(id){
-  const i = DRAFT.picks.indexOf(id);
-  if (i >= 0){ DRAFT.picks.splice(i, 1); if (DRAFT.cap === id) DRAFT.cap = DRAFT.picks[0] || null; }
+  const F = simFrame(startIdx(DRAFT.start)), i = DRAFT.picks.indexOf(id);
+  if (i >= 0){ DRAFT.picks.splice(i, 1); delete DRAFT.boost[id]; }
   else {
-    if (DRAFT.picks.length >= SIM_MAX){ toast('A lineup has up to ' + SIM_MAX + ' creators. Remove one first.'); return; }
-    DRAFT.picks.push(id); DRAFT.fresh = id; if (!DRAFT.cap) DRAFT.cap = id;
+    if (DRAFT.picks.length >= SIM_PICKS){ toast('A lineup has exactly ' + SIM_PICKS + ' creators. Remove one first.'); return; }
+    if (starSum(F, DRAFT.picks) + (F.stars.get(id) || 0) > STAR_CAP){ toast('That would go over the ' + STAR_CAP + '-star cap'); return; }
+    DRAFT.picks.push(id); DRAFT.fresh = id;
   }
   saveDraft(); draftUI();
 }
 function lockLineup(){
-  if (!DRAFT.picks.length) return;
-  if (LINEUPS.length >= SIM_KEEP){ toast('You can keep ' + SIM_KEEP + ' lineups. Delete one to lock a new one.'); return; }
   const R = simRanks(), k = startIdx(DRAFT.start), s = R[k], F = simFrame(k);
   const picks = DRAFT.picks.filter(id => s.m.has(id));
-  if (!picks.length) return;
-  const L = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), start: s.asOf, practice: DRAFT.start !== 'now', made: Date.now(),
-    cap: picks.includes(DRAFT.cap) ? DRAFT.cap : picks[0], seen: R[R.length - 1].asOf, picks: picks.map(id => ({id, name: F.names[id], r0: s.m.get(id)}))};
+  if (picks.length !== SIM_PICKS || starSum(F, picks) > STAR_CAP) return;
+  if (LINEUPS.length >= SIM_KEEP){ toast('You can keep ' + SIM_KEEP + ' lineups. Delete one to lock a new one.'); return; }
+  const L = {v: 2, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), start: s.asOf, practice: DRAFT.start !== 'now', made: Date.now(), seen: R[R.length - 1].asOf,
+    picks: picks.map(id => ({id, name: F.names[id], r0: s.m.get(id), stars: F.stars.get(id), boost: DRAFT.boost[id] || 0}))};
   LINEUPS.unshift(L); saveLineups();
   if (SEEN0) SEEN0[L.id] = L.seen;
-  DRAFT.picks = []; DRAFT.cap = null; saveDraft();
+  DRAFT.picks = []; DRAFT.boost = {}; saveDraft();
   renderSim();
   toast(L.practice ? 'Practice run scored' : 'Lineup locked. Points start with the next update.');
   const el = document.querySelector('[data-lu="' + L.id + '"]'); if (el) el.scrollIntoView({behavior: RM.matches ? 'auto' : 'smooth', block: 'start'});
 }
-
 function renderSim(){
   if (!DATA || VIEW !== 'sim') return;
   const R = simRanks(), latest = R[R.length - 1].asOf;
   if (!ALL_LOADED && (DRAFT.start === 'first' || LINEUPS.some(L => Date.parse(L.start) < R[0].t - 60e3))) loadAll();
-  // remember what was seen before this visit, so the "since your last visit" tags hold for the whole visit
   if (!SEEN0){ SEEN0 = {}; for (const L of LINEUPS) SEEN0[L.id] = L.seen; }
   let ch = false; for (const L of LINEUPS) if (L.seen !== latest){ L.seen = latest; ch = true; } if (ch) saveLineups();
   $('rwp').hidden = SIMMODE !== 'rewind'; $('lup').hidden = SIMMODE !== 'lineups';
@@ -1470,57 +1557,47 @@ function renderSim(){
   if (SIMMODE === 'rewind'){ if (!RW || !$('rwBox').innerHTML) rwRender(); }   // never redraw a game in progress
   else { draftUI(); lineupsUI(); }
 }
-
+function slotHtml(x, i, n, fresh, rm, extra){
+  if (!x) return '<div class="slot none"><span class="plus" aria-hidden="true">+</span><span>' + (i === n ? 'Pick a creator' : 'Empty') + '</span></div>';
+  return '<div class="slot' + (fresh === x.id ? ' fresh' : '') + '"><button class="sx" ' + rm + '="' + x.id + '" aria-label="Remove ' + esc(x.name) + '">×</button>' + avatar(x.name, 42, x.chw) +
+    '<div class="nm">' + esc(x.name) + '</div><div class="sub">#' + x.rank + ', <span class="st">★' + x.stars + '</span>, ' + (x.chw ? '<span class="mv ' + cls(x.chw) + '">' + fmt(x.chw) + '</span> in 24h' : 'no move in 24h') + '</div>' + (extra || '') + '</div>';
+}
 function draftUI(){
   const k = startIdx(DRAFT.start), F = simFrame(k), s = simRanks()[k], n0 = DRAFT.picks.length;
-  DRAFT.picks = DRAFT.picks.filter(id => s.m.has(id)).slice(0, SIM_MAX);
+  DRAFT.picks = DRAFT.picks.filter(id => s.m.has(id)).slice(0, SIM_PICKS);
   if (DRAFT.picks.length < n0) toast('Dropped picks who were not on the board at that update');
-  if (!DRAFT.picks.includes(DRAFT.cap)) DRAFT.cap = DRAFT.picks[0] || null;
   document.querySelectorAll('#sstart button').forEach(b => b.classList.toggle('on', b.dataset.s === DRAFT.start));
   document.querySelectorAll('#sfilt button').forEach(b => b.classList.toggle('on', b.dataset.f === DRAFT.f));
-  const byId = new Map(F.rows.map(r => [r.id, r])), n = DRAFT.picks.length;
+  const byId = new Map(F.rows.map(r => [r.id, r])), n = DRAFT.picks.length, used = starSum(F, DRAFT.picks);
   let html = '';
-  for (let i = 0; i < SIM_MAX; i++){
-    const id = DRAFT.picks[i], r = id && byId.get(id);
-    if (!r){ html += '<div class="slot none"><span class="plus" aria-hidden="true">+</span><span>' + (i === n ? 'Pick a creator below' : 'Empty slot') + '</span></div>'; continue; }
-    const cap = id === DRAFT.cap;
-    html += '<div class="slot' + (cap ? ' cap' : '') + (DRAFT.fresh === id ? ' fresh' : '') + '" data-scap="' + id + '" title="Tap to make captain"><button class="sx" data-srm="' + id + '" aria-label="Remove ' + esc(r.name) + '">×</button>' + avatar(r.name, 46, r.chw) +
-      '<div class="nm">' + esc(r.name) + '</div><div class="sub">#' + r.rank + ', ' + (r.chw ? '<span class="mv ' + cls(r.chw) + '">' + fmt(r.chw) + '</span> in 24h' : 'no move in 24h') + '</div>' +
-      '<button class="capb" data-scap="' + id + '" aria-pressed="' + cap + '">' + (cap ? '★ Captain, counts double' : 'Make captain') + '</button></div>';
+  for (let i = 0; i < SIM_PICKS; i++){
+    const id = DRAFT.picks[i], x = id && byId.get(id);
+    const sel = x ? '<label class="rar"><span class="sr">Card rarity for ' + esc(x.name) + '</span><select data-sboost="' + id + '">' + RARITY.map(([nm, m], j) => '<option value="' + j + '"' + ((DRAFT.boost[id] || 0) === j ? ' selected' : '') + '>' + nm + ' ' + m + '×</option>').join('') + '</select></label>' : '';
+    html += slotHtml(x, i, n, DRAFT.fresh, 'data-srm', sel);
   }
-  $('slots').innerHTML = html; DRAFT.fresh = null;
-  const when = dayf(s.t) + ', ' + hhmm(s.t);
-  $('lock').disabled = !n;
+  DRAFT.fresh = null;
+  $('slots').innerHTML = html;
+  $('sstars').innerHTML = starMeter(used);
+  const ok = n === SIM_PICKS && used <= STAR_CAP, when = dayf(s.t) + ', ' + hhmm(s.t);
+  $('lock').disabled = !ok;
   $('lock').textContent = DRAFT.start === 'now' ? 'Lock lineup' : 'Run practice';
-  $('lockTxt').textContent = (n ? n + ' of ' + SIM_MAX + ' picked. ' : 'Pick 1 to ' + SIM_MAX + ' creators. ') +
+  $('lockTxt').textContent = (n < SIM_PICKS ? 'Pick ' + (SIM_PICKS - n) + ' more. ' : '') +
     (DRAFT.start === 'now' ? 'Locks at the ' + when + ' update. Points start with the next one.' : 'Starts at the ' + when + ' update and scores every update since, straight away.');
-  const v = DRAFT.q.trim().toLowerCase();
-  let list = F.rows.filter(r => !v || r.name.toLowerCase().includes(v));
-  if (DRAFT.f === 'up') list = list.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw);
-  else if (DRAFT.f === 'cheap') list = list.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat);
-  else list.sort((a, b) => a.rank - b.rank);
-  const full = n >= SIM_MAX, foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.sadd : null;
-  $('cands').innerHTML = list.length ? list.map(r => { const on = DRAFT.picks.includes(r.id);
-    return '<div class="cand' + (on ? ' on' : full ? ' off' : '') + '" role="button" tabindex="0" data-sadd="' + r.id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove ' : 'Add ') + esc(r.name) + ', rank ' + r.rank + '"><span class="rk">#' + r.rank + '</span>' + avatar(r.name, 28, r.chw) +
-      '<span class="nm">' + esc(r.name) + badge(r) + (r.cheap && r.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</span>' + spark(r.seg.filter(q => q.t >= F.tNow - 72 * H), F.N) +
-      '<span class="mv ' + cls(r.chw) + '">' + (r.chw ? fmt(r.chw) : '·') + '</span><span class="add" aria-hidden="true">' + (on ? '✓' : '+') + '</span></div>'; }).join('')
-    : '<p class="empty">' + (v ? 'No creator matches that name.' : DRAFT.f === 'up' ? 'Nobody climbed in the 24 hours before this update.' : 'Nobody is cheap and rising at this update.') + '</p>';
+  const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.sadd : null;
+  $('cands').innerHTML = candRows(F, DRAFT.picks, DRAFT.q, DRAFT.f, 'data-sadd');
   if (foc){ const e = $('cands').querySelector('[data-sadd="' + foc + '"]'); if (e) e.focus({preventScroll: true}); }
 }
-
 function scoreSvg(se){
-  const W = 420, HH = 150, m = {l: 38, r: 12, t: 12, b: 26}, iw = W - m.l - m.r, ih = HH - m.t - m.b;
-  const t0 = se[0].t, t1 = se[se.length - 1].t, vs = se.map(p => p.s);
-  let lo = Math.min(0, ...vs), hi = Math.max(0, ...vs); if (hi - lo < 4){ hi += 2; lo -= 2; }
-  const X = t => m.l + (t - t0) / Math.max(t1 - t0, 1) * iw, Y = v => m.t + (hi - v) / (hi - lo) * ih;
-  const xy = se.map(p => [X(p.t).toFixed(1), Y(p.s).toFixed(1)]), col = mvCol(vs[vs.length - 1]), lx = xy[xy.length - 1];
-  const lab = (v, y) => '<text x="' + (m.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" fill="#5d6a8c" font-size="11">' + sg(v) + '</text>';
-  return '<svg class="lu-ch" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Score after each update, ending at ' + sg(vs[vs.length - 1]) + '">' +
-    '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="#3a4577"/>' +
-    (hi > 0 ? lab(hi, m.t) : '') + lab(0, Y(0)) + (lo < 0 ? lab(lo, m.t + ih) : '') +
-    '<path d="M' + xy[0][0] + ',' + Y(0).toFixed(1) + 'L' + xy.map(a => a.join(',')).join('L') + 'L' + lx[0] + ',' + Y(0).toFixed(1) + 'Z" fill="' + col + '" opacity=".13"/>' +
-    '<polyline class="dr" pathLength="1" points="' + xy.map(a => a.join(',')).join(' ') + '" fill="none" stroke="' + col + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>' +
-    '<circle cx="' + lx[0] + '" cy="' + lx[1] + '" r="4.5" fill="' + col + '" stroke="#0b1029" stroke-width="2"/>' +
+  const W = 420, HH = 150, m = {l: 46, r: 12, t: 12, b: 26}, iw = W - m.l - m.r, ih = HH - m.t - m.b;
+  const t0 = se[0].t, t1 = se[se.length - 1].t, vs = se.map(p => p.s), hi = Math.max(100, ...vs) * 1.1;
+  const X = t => m.l + (t - t0) / Math.max(t1 - t0, 1) * iw, Y = v => m.t + (hi - v) / hi * ih;
+  const xy = se.map(p => [X(p.t).toFixed(1), Y(p.s).toFixed(1)]), lx = xy[xy.length - 1];
+  const lab = (v, y) => '<text x="' + (m.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" fill="#5d6a8c" font-size="11">' + nf(v) + '</text>';
+  return '<svg class="lu-ch" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Score after each update, ending at ' + nf(vs[vs.length - 1]) + '">' +
+    '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="#3a4577"/>' + lab(0, Y(0)) + lab(Math.round(hi / 1.1), Y(hi / 1.1)) +
+    '<path d="M' + xy[0][0] + ',' + Y(0).toFixed(1) + 'L' + xy.map(a => a.join(',')).join('L') + 'L' + lx[0] + ',' + Y(0).toFixed(1) + 'Z" fill="' + SCORE_COL + '" opacity=".1"/>' +
+    '<polyline class="dr" pathLength="1" points="' + xy.map(a => a.join(',')).join(' ') + '" fill="none" stroke="' + SCORE_COL + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + lx[0] + '" cy="' + lx[1] + '" r="4.5" fill="' + SCORE_COL + '" stroke="#0b1029" stroke-width="2"/>' +
     '<text x="' + m.l + '" y="' + (HH - 6) + '" fill="#5d6a8c" font-size="11">' + dayf(t0) + ', ' + hhmm(t0) + '</text>' +
     '<text x="' + (W - m.r) + '" y="' + (HH - 6) + '" text-anchor="end" fill="#5d6a8c" font-size="11">' + dayf(t1) + ', ' + hhmm(t1) + '</text></svg>';
 }
@@ -1531,107 +1608,94 @@ function lineupsUI(){
   $('myl').innerHTML = LINEUPS.map(L => {
     const S = scoreLineup(L), t0 = Date.parse(L.start);
     const head = '<div class="lu-h"><div><h3>' + (L.practice ? 'Practice from ' : 'Locked ') + dayf(t0) + ', ' + hhmm(t0) + ' ' + (L.practice ? '<span class="tag nb">Practice</span>' : '<span class="tag live">Live</span>') + '</h3>' +
-      '<p class="sub">' + L.picks.length + (L.picks.length === 1 ? ' creator' : ' creators') + (S ? ', ' + S.n + (S.n === 1 ? ' update' : ' updates') + ' scored' : '') + ', <span class="nxt">' + nextTxt() + '</span></p></div>' +
+      '<p class="sub">' + L.picks.reduce((a, p) => a + p.stars, 0) + ' of ' + STAR_CAP + ' stars' + (S ? ', ' + S.n + (S.n === 1 ? ' update' : ' updates') + ' scored' : '') + ', <span class="nxt">' + nextTxt() + '</span></p></div>' +
       '<div class="tools"><button class="btn sm" data-lsave="' + L.id + '"' + (S && S.n ? '' : ' disabled') + '>Save image</button><button class="btn sm" data-ldel="' + L.id + '">Delete</button></div></div>';
     if (!S) return '<div class="lu" data-lu="' + L.id + '">' + head + '<p class="sub">' + (ALL_LOADED ? 'The update this lineup started from is not in the saved history any more.' : 'Loading the history for this lineup.') + '</p></div>';
     const sk = SEEN0 && SEEN0[L.id] ? S.series.findIndex(p => sameT(p.t, Date.parse(SEEN0[L.id]))) : -1;
     const since = sk >= 0 && sk < S.series.length - 1 ? S.score - S.series[sk].s : null;
-    const left = '<div class="lu-s"><div class="lu-score"><b class="' + cls(S.score) + '">' + sg(S.score) + '</b><span class="pts">' + (Math.abs(S.score) === 1 ? 'point' : 'points') + '</span>' +
-      (since != null ? '<span class="tag ' + (since > 0 ? 'gain' : since < 0 ? 'loss' : 'nb') + '">' + sg(since) + ' since your last visit</span>' : '') + '</div>' +
-      (S.n ? '<div class="lu-st"><div><small>Random lineups beaten</small><b>' + S.pct + '%</b></div><div><small>Best possible</small><b>' + sg(S.best) + '</b></div></div>' + scoreSvg(S.series)
-        : '<p class="sub wait">Scoring starts with the next update. Come back after it lands to see how your picks moved.</p>') + '</div>';
-    const rows = S.picks.map(p => '<tr data-open="' + p.id + '" tabindex="0"><td><span class="who">' + avatar(p.name, 28, p.r0 - p.rn) + '<span class="nwrap"><span class="nm">' + esc(p.name) + '</span>' + (p.cap ? '<span class="tag">Captain ×2</span>' : '') + '</span></span></td>' +
-      '<td class="num">#' + p.r0 + ' → ' + (p.gone ? 'off the board' : '#' + p.rn) + '</td><td class="hide-s">' + spark(p.path, 0, 72, 22) + '</td><td class="num"><b class="mv ' + cls(p.pts) + '">' + sg(p.pts) + '</b></td></tr>').join('');
+    const left = '<div class="lu-s"><div class="lu-score"><b class="sc">' + nf(S.score) + '</b><span class="pts">estimated points</span>' +
+      (since != null && Math.round(since) ? '<span class="tag ' + (since > 0 ? 'gain' : 'loss') + '">' + sg(since) + ' since your last visit</span>' : '') + '</div>' +
+      (S.n ? '<div class="lu-st"><div><small>Random lineups beaten' + (S.boosted ? ', before boosts' : '') + '</small><b>' + S.pct + '%</b></div><div><small>Best possible lineup</small><b>' + nf(S.best.v) + '</b></div></div>' + scoreSvg(S.series)
+        : '<p class="sub wait">Scoring starts with the next update. Come back after it lands to see how your picks did.</p>') + '</div>';
+    const rows = S.picks.map(p => '<tr data-open="' + p.id + '" tabindex="0"><td><span class="who">' + avatar(p.name, 28, p.r0 - p.rn) + '<span class="nwrap"><span class="nm">' + esc(p.name) + '</span><span class="sub2">★' + p.stars + (p.boost ? ', ' + RARITY[p.boost][0] + ' ' + RARITY[p.boost][1] + '×' : '') + '</span></span></span></td>' +
+      '<td class="num">#' + p.r0 + ' → ' + (p.gone ? 'off the board' : '#' + p.rn) + '</td><td class="hide-s">' + spark(p.path, 0, 72, 22) + '</td><td class="num"><b class="sc">' + (S.n ? nf(p.pts) : '–') + '</b></td></tr>').join('');
     return '<div class="lu" data-lu="' + L.id + '">' + head + '<div class="lu-g">' + left + '<div class="lu-p"><table><thead><tr><th>Pick</th><th class="num">Locked, now</th><th class="hide-s">Since the lock</th><th class="num">Points</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
   }).join('');
 }
 
 /* the lineup share image */
 function avCols(n){ let h = 0; for (const c of n) h = (h * 31 + c.codePointAt(0)) >>> 0; return AVBG[h % AVBG.length]; }
+function cardAvatar(g, name, x, y, r, ring){
+  const [a, b] = avCols(name), gr = g.createLinearGradient(x - r, y - r, x + r, y + r); gr.addColorStop(0, a); gr.addColorStop(1, b);
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = gr; g.fill();
+  g.lineWidth = 2.5; g.strokeStyle = ring || '#2a3462'; g.beginPath(); g.arc(x, y, r + 4, 0, 7); g.stroke();
+  fnt(g, 800, Math.round(r * .66)); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(initials(name), x, y + 1);
+}
+function cardScoreBlock(g, P, label, value, unit){
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  fnt(g, 600, 18); g.fillStyle = FOG; g.fillText(label, P.x + 36, P.y + 54);
+  fnt(g, 850, 112, null, 'semi-expanded'); g.fillStyle = SCORE_COL; const st = nf(value); g.fillText(st, P.x + 30, P.y + 164);
+  const sw = g.measureText(st).width; fnt(g, 700, 34, 'Caveat, cursive'); g.fillStyle = TXT; g.fillText(unit, P.x + 44 + sw, P.y + 162);
+}
 function lineupCard(L){
-  const S = scoreLineup(L), [c, g] = cardBase(), se = S.series, t0 = se[0].t, t1 = se[se.length - 1].t;
-  cardHead(g, L.practice ? 'My Motion lineup, practice run' : 'My Motion lineup', uDay(t0) + ' to ' + uDay(t1) + ', ' + S.n + (S.n === 1 ? ' update' : ' updates'), t1);
-  // score panel
+  const S = scoreLineup(L), [c, g] = cardBase(), se = S.series, t0 = se[0].t, t1 = se[se.length - 1].t, tl = Date.parse(L.start);
+  cardHead(g, L.practice ? 'My Motion lineup, practice run' : 'My Motion lineup', uDay(tl) + ' to ' + uDay(t1) + ', ' + S.n + (S.n === 1 ? ' update' : ' updates'), t1);
   const P = {x: PAD, y: 246, w: 548, h: 568};
   cardPanel(g, P.x, P.y, P.w, P.h);
-  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  fnt(g, 600, 18); g.fillStyle = FOG; g.fillText('Score', P.x + 36, P.y + 54);
-  fnt(g, 850, 128, null, 'semi-expanded'); g.fillStyle = mvCol(S.score); const st = sg(S.score); g.fillText(st, P.x + 30, P.y + 172);
-  const sw = g.measureText(st).width; fnt(g, 700, 36, 'Caveat, cursive'); g.fillStyle = TXT; g.fillText(Math.abs(S.score) === 1 ? 'point' : 'points', P.x + 46 + sw, P.y + 170);
-  const box = (x, label, val) => { rr(g, x, P.y + 206, 226, 92, 14); g.fillStyle = '#121a3d'; g.fill(); fnt(g, 600, 15); g.fillStyle = FOG; g.fillText(label, x + 20, P.y + 238); fnt(g, 800, 32, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText(val, x + 20, P.y + 280); };
-  box(P.x + 36, 'Random lineups beaten', S.pct + '%'); box(P.x + 286, 'Best possible', sg(S.best));
-  // score over time
-  const m = {l: P.x + 84, r: P.x + P.w - 36, t: P.y + 340, b: P.y + P.h - 58}, iw = m.r - m.l, ih = m.b - m.t, vs = se.map(p => p.s);
-  let lo = Math.min(0, ...vs), hi = Math.max(0, ...vs); if (hi - lo < 4){ hi += 2; lo -= 2; }
-  const X = t => m.l + (t - t0) / Math.max(t1 - t0, 1) * iw, Y = v => m.t + (hi - v) / (hi - lo) * ih, col = mvCol(S.score);
+  cardScoreBlock(g, P, 'Estimated score', S.score, 'points');
+  const box = (x, label, val) => { rr(g, x, P.y + 200, 226, 92, 14); g.fillStyle = '#121a3d'; g.fill(); fnt(g, 600, 15); g.fillStyle = FOG; g.textAlign = 'left'; g.fillText(label, x + 20, P.y + 232); fnt(g, 800, 32, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText(val, x + 20, P.y + 274); };
+  box(P.x + 36, 'Random lineups beaten', S.pct + '%'); box(P.x + 286, 'Best possible', nf(S.best.v));
+  const m = {l: P.x + 84, r: P.x + P.w - 36, t: P.y + 336, b: P.y + P.h - 58}, iw = m.r - m.l, ih = m.b - m.t, hi = Math.max(100, ...se.map(p => p.s)) * 1.1;
+  const X = t => m.l + (t - t0) / Math.max(t1 - t0, 1) * iw, Y = v => m.t + (hi - v) / hi * ih;
   fnt(g, 600, 14); g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillStyle = '#5d6a8c';
-  for (const v of [...new Set([hi, 0, lo])]){ g.fillText(sg(v), m.l - 12, Y(v)); if (v){ g.strokeStyle = '#151d45'; g.lineWidth = 1; g.beginPath(); g.moveTo(m.l, Math.round(Y(v)) + .5); g.lineTo(m.r, Math.round(Y(v)) + .5); g.stroke(); } }
-  g.strokeStyle = '#3a4577'; g.lineWidth = 1; g.beginPath(); g.moveTo(m.l, Math.round(Y(0)) + .5); g.lineTo(m.r, Math.round(Y(0)) + .5); g.stroke();
-  g.beginPath(); g.moveTo(X(t0), Y(0)); se.forEach(p => g.lineTo(X(p.t), Y(p.s))); g.lineTo(X(t1), Y(0)); g.closePath(); g.fillStyle = col + '22'; g.fill();
-  for (const [lw, a] of [[10, '26'], [3.2, '']]){ g.strokeStyle = col + a; g.lineWidth = lw; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); se.forEach((p, i) => i ? g.lineTo(X(p.t), Y(p.s)) : g.moveTo(X(p.t), Y(p.s))); g.stroke(); }
-  g.beginPath(); g.arc(X(t1), Y(S.score), 7, 0, 7); g.fillStyle = col; g.fill(); g.lineWidth = 3; g.strokeStyle = '#0b1029'; g.stroke();
+  g.fillText('0', m.l - 12, Y(0)); g.fillText(nf(hi / 1.1), m.l - 12, Y(hi / 1.1));
+  g.strokeStyle = '#151d45'; g.lineWidth = 1; g.beginPath(); g.moveTo(m.l, Math.round(Y(hi / 1.1)) + .5); g.lineTo(m.r, Math.round(Y(hi / 1.1)) + .5); g.stroke();
+  g.strokeStyle = '#3a4577'; g.beginPath(); g.moveTo(m.l, Math.round(Y(0)) + .5); g.lineTo(m.r, Math.round(Y(0)) + .5); g.stroke();
+  g.beginPath(); g.moveTo(X(t0), Y(0)); se.forEach(p => g.lineTo(X(p.t), Y(p.s))); g.lineTo(X(t1), Y(0)); g.closePath(); g.fillStyle = SCORE_COL + '1c'; g.fill();
+  for (const [lw, a] of [[10, '26'], [3.2, '']]){ g.strokeStyle = SCORE_COL + a; g.lineWidth = lw; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); se.forEach((p, i) => i ? g.lineTo(X(p.t), Y(p.s)) : g.moveTo(X(p.t), Y(p.s))); g.stroke(); }
   g.textBaseline = 'alphabetic'; fnt(g, 600, 14); g.fillStyle = '#5d6a8c';
-  g.textAlign = 'left'; g.fillText('Locked ' + uDayS(t0) + ' ' + uHM(t0), m.l, m.b + 30); g.textAlign = 'right'; g.fillText(uDayS(t1) + ' ' + uHM(t1) + ' UTC', m.r, m.b + 30);
-  // picks panel
+  g.textAlign = 'left'; g.fillText('Locked ' + uDayS(tl) + ' ' + uHM(tl), m.l, m.b + 30); g.textAlign = 'right'; g.fillText(uDayS(t1) + ' ' + uHM(t1) + ' UTC', m.r, m.b + 30);
   const Q = {x: PAD + 572, y: 246, w: CW - PAD - (PAD + 572), h: 568};
   cardPanel(g, Q.x, Q.y, Q.w, Q.h);
-  g.textAlign = 'left'; fnt(g, 750, 24, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText('The picks', Q.x + 32, Q.y + 52);
-  fnt(g, 700, 26, 'Caveat, cursive'); g.fillStyle = PINK; g.fillText('rank when locked, then rank now', Q.x + 32, Q.y + 84);
-  const rowH = Math.min(92, (Q.h - 120) / S.picks.length);
+  g.textAlign = 'left'; fnt(g, 750, 24, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText('The five picks', Q.x + 32, Q.y + 52);
+  fnt(g, 700, 26, 'Caveat, cursive'); g.fillStyle = PINK; g.fillText(L.picks.reduce((a, p) => a + p.stars, 0) + ' of ' + STAR_CAP + ' stars, rank when locked, then now', Q.x + 32, Q.y + 84);
+  const rowH = (Q.h - 120) / S.picks.length;
   S.picks.forEach((p, i) => {
     const y = Q.y + 112 + i * rowH, cy = y + rowH / 2;
     if (i){ g.strokeStyle = '#151d42'; g.lineWidth = 1; g.beginPath(); g.moveTo(Q.x + 32, y + .5); g.lineTo(Q.x + Q.w - 32, y + .5); g.stroke(); }
-    const [a, b] = avCols(p.name), gr = g.createLinearGradient(Q.x + 32, cy - 24, Q.x + 80, cy + 24); gr.addColorStop(0, a); gr.addColorStop(1, b);
-    g.beginPath(); g.arc(Q.x + 56, cy, 24, 0, 7); g.fillStyle = gr; g.fill();
-    g.lineWidth = 2.5; g.strokeStyle = p.cap ? PINK : '#2a3462'; g.beginPath(); g.arc(Q.x + 56, cy, 28, 0, 7); g.stroke();
-    fnt(g, 800, 16); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(initials(p.name), Q.x + 56, cy + 1);
-    g.textAlign = 'left'; fnt(g, 700, 21); g.fillStyle = TXT; const nm = fit(g, p.name, 300); g.fillText(nm, Q.x + 100, cy - (p.cap ? 12 : 0));
-    if (p.cap){ fnt(g, 750, 13); const tw = g.measureText('CAPTAIN ×2').width; rr(g, Q.x + 100, cy + 4, tw + 18, 22, 11); g.fillStyle = PINK; g.fill(); g.fillStyle = '#fff'; g.fillText('CAPTAIN ×2', Q.x + 109, cy + 16); }
-    // where they went since the lock
-    const sx0 = Q.x + 430, sx1 = Q.x + Q.w - 300, pr = p.path.map(q => q.r), plo = Math.min(...pr), phi = Math.max(...pr), span = Math.max(phi - plo, 4);
+    cardAvatar(g, p.name, Q.x + 56, cy, 24);
+    g.textAlign = 'left'; g.textBaseline = 'middle'; fnt(g, 700, 21); g.fillStyle = TXT; g.fillText(fit(g, p.name, 300), Q.x + 100, cy - 12);
+    fnt(g, 600, 15); g.fillStyle = '#c98500'; g.fillText('★' + p.stars + (p.boost ? '   ' + RARITY[p.boost][0] + ' ' + RARITY[p.boost][1] + '×' : ''), Q.x + 100, cy + 14);
+    const sx0 = Q.x + 430, sx1 = Q.x + Q.w - 300, pr = p.path.map(q => q.r), plo = Math.min(...pr), span = Math.max(Math.max(...pr) - plo, 4);
     const SX = t => sx0 + (t - t0) / Math.max(t1 - t0, 1) * (sx1 - sx0), SY = r => cy - 18 + (r - plo) / span * 36;
     g.strokeStyle = mvCol(p.r0 - p.rn); g.lineWidth = 3; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); p.path.forEach((q, k) => k ? g.lineTo(SX(q.t), SY(q.r)) : g.moveTo(SX(q.t), SY(q.r))); g.stroke();
-    fnt(g, 650, 19, null, 'semi-expanded'); g.fillStyle = FOG; g.textAlign = 'left';
-    g.fillText('#' + p.r0 + ' → ' + (p.gone ? 'off' : '#' + p.rn), sx1 + 36, cy + 1);
-    g.textAlign = 'right'; fnt(g, 850, 30, null, 'semi-expanded'); g.fillStyle = mvCol(p.pts); g.fillText(sg(p.pts), Q.x + Q.w - 32, cy + 1);
+    fnt(g, 650, 19, null, 'semi-expanded'); g.fillStyle = FOG; g.textAlign = 'left'; g.fillText('#' + p.r0 + ' → ' + (p.gone ? 'off' : '#' + p.rn), sx1 + 30, cy + 1);
+    g.textAlign = 'right'; fnt(g, 850, 28, null, 'semi-expanded'); g.fillStyle = SCORE_COL; g.fillText(nf(p.pts), Q.x + Q.w - 32, cy + 1);
   });
-  cardFoot(g);
+  g.textBaseline = 'alphabetic'; cardFoot(g);
   return c;
 }
 
-/* ---------- Motion Rewind: a 5-minute game on saved history ---------- */
-/* each round shows the board at a hidden past update; you pick 3 and watch the next 24 hours play out in seconds */
-const RW_ROUNDS = 5, RW_PICKS = 3, RW_SECS = 30, RW_RACE = 9000;
+/* ---------- Motion Rewind: a 5-minute game on saved history, same lineup rules ---------- */
+const RW_ROUNDS = 5, RW_SECS = 45, RW_RACE = 9000;
 let RW = null, SIMMODE = 'rewind';
 try { SIMMODE = localStorage.getItem('mr-simmode') || 'rewind'; } catch(e) {}
 let RWDAY = {};
-try { RWDAY = JSON.parse(localStorage.getItem('mr-rewind') || '{}') || {}; } catch(e) { RWDAY = {}; }
+try { RWDAY = JSON.parse(localStorage.getItem('mr-rewind2') || '{}') || {}; } catch(e) { RWDAY = {}; }
 const dayKey = t => new Date(t).toISOString().slice(0, 10);
-const strHash = s => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
-function countUp(el, to, ms = 900, from = 0){
+function countUp(el, to, ms = 900, fmtFn = nf){
   if (!el) return;
-  if (RM.matches){ el.textContent = sg(to); return; }
-  const t0 = performance.now(), f = now => { const p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3); el.textContent = sg(Math.round(from + (to - from) * e)); if (p < 1) requestAnimationFrame(f); };
+  if (RM.matches){ el.textContent = fmtFn(to); return; }
+  const t0 = performance.now(), f = now => { const p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3); el.textContent = fmtFn(to * e); if (p < 1) requestAnimationFrame(f); };
   requestAnimationFrame(f);
 }
-/* quick picks, shared by Rewind and Live lineups */
-function quickIds(F, n, kind, rnd = Math.random){
-  let L;
-  if (kind === 'hot') L = F.rows.filter(r => r.chw > 0).sort((a, b) => b.chw - a.chw);
-  else if (kind === 'cheap') L = F.rows.filter(r => r.cheap && r.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat);
-  else { L = F.rows.slice(); for (let i = L.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); const x = L[i]; L[i] = L[j]; L[j] = x; } }
-  return L.slice(0, n).map(r => r.id);
-}
-const QNAME = {hot: 'Hot hand', cheap: 'Cheap and rising', rand: 'Random'};
-
-/* updates that have a saved update exactly 24 hours later */
+/* rounds start at updates that have a saved update exactly 24 hours later */
 function rwPool(daily){
   const R = simRanks(), out = [], dayStart = Date.parse(dayKey(Date.now()) + 'T00:00:00Z');
-  for (let k = 0; k < R.length; k++){
+  for (let k = 1; k < R.length; k++){
     if (SNAPS[k].live) continue;
-    const t = R[k].t;
-    const e = R.findIndex(s => Math.abs(s.t - (t + 24 * H)) <= 30 * 60e3);
-    if (k < 1 || e < 0 || SNAPS[e].live) continue;   // needs some history before it and a saved update exactly a day later
+    const e = R.findIndex(s => Math.abs(s.t - (R[k].t + 24 * H)) <= 30 * 60e3);
+    if (e < 0 || SNAPS[e].live) continue;
     if (daily && R[e].t >= dayStart) continue;   // the daily set never changes during the day
     out.push({k, e});
   }
@@ -1643,18 +1707,16 @@ async function rwStart(daily){
   if (!pool.length){ toast('Not enough saved history for a game yet'); return; }
   const seed = daily ? strHash('rewind|' + dayKey(Date.now())) : (Date.now() >>> 0), rnd = mulberry(seed), R = simRanks();
   const sh = pool.slice(); for (let i = sh.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); const x = sh[i]; sh[i] = sh[j]; sh[j] = x; }
-  // spread the rounds out so they don't overlap much
   const pick = [];
   for (const p of sh) if (pick.length < RW_ROUNDS && pick.every(q => Math.abs(R[q.k].t - R[p.k].t) >= 12 * H)) pick.push(p);
   for (const p of sh) if (pick.length < RW_ROUNDS && !pick.includes(p)) pick.push(p);
   RW = {daily, date: dayKey(Date.now()), seed, relaxed: $('rwRelax') ? $('rwRelax').checked : false, i: 0, total: 0, phase: 'pick', q: '', f: 'rank',
-    rounds: pick.map(p => ({k: p.k, e: p.e, picks: [], cap: null, names: {}}))};
+    rounds: pick.map(p => ({k: p.k, e: p.e, picks: [], names: {}}))};
   rwPickUI();
 }
-
 function rwRender(){
-  const box = $('rwBox'); if (!box || !DATA) return;
-  if (!RW || RW.phase === 'intro') return rwIntro();
+  if (!$('rwBox') || !DATA) return;
+  if (!RW) return rwIntro();
   if (RW.phase === 'pick') return rwPickUI();
   if (RW.phase === 'final') return rwFinal(false);
   if (RW.phase === 'result') return rwRaceUI(true);
@@ -1662,36 +1724,34 @@ function rwRender(){
 function rwIntro(){
   const today = RWDAY[dayKey(Date.now())];
   $('rwBox').innerHTML = '<div class="rw-intro"><div><p class="hand pink rw-kick">5 rounds, about 5 minutes</p><h2 class="rw-title">Motion Rewind</h2>' +
-    '<p class="rw-lede">Go back to a hidden moment on the Motion leaderboard, pick who climbs next, and watch 24 hours play out in seconds.</p>' +
+    '<p class="rw-lede">Go back to a hidden moment on the Motion leaderboard, draft a lineup the Motion way, and watch the next 24 hours play out in seconds.</p>' +
     '<div class="rw-cta"><button class="btn pri big" id="rwDaily">' + (today ? 'Play today\'s rounds again' : 'Play today\'s challenge') + '</button><button class="btn big" id="rwRand">Random game</button></div>' +
-    (today ? '<p class="rw-today">Today\'s challenge: <b class="mv ' + cls(today.score) + '">' + sg(today.score) + '</b>, better than ' + today.pct + '% of random players. Replays don\'t change it.</p>' : '<p class="rw-today">Everyone gets the same 5 rounds today, so you can compare scores. New rounds tomorrow.</p>') +
+    (today ? '<p class="rw-today">Today\'s challenge: <b class="sc">' + nf(today.score) + '</b> points' + (today.ofBest ? ', ' + today.ofBest + '% of the best possible' : '') + '. Replays don\'t change it.</p>' : '<p class="rw-today">Everyone gets the same 5 rounds today, so you can compare scores. New rounds tomorrow.</p>') +
     '<label class="rw-relax"><input type="checkbox" id="rwRelax"> No timer</label></div>' +
     '<ol class="rw-steps"><li><b class="n">1</b><div><b>See the board</b><span>at a past update. The date stays hidden until the round ends.</span></div></li>' +
-    '<li><b class="n">2</b><div><b>Pick 3 in 30 seconds</b><span>and tap one to make it your captain. The captain counts double.</span></div></li>' +
-    '<li><b class="n">3</b><div><b>Watch the next 24 hours</b><span>race by. Every place a pick climbs is +1, every place it falls is −1.</span></div></li></ol></div>';
+    '<li><b class="n">2</b><div><b>Pick 5 within ' + STAR_CAP + ' stars</b><span>in ' + RW_SECS + ' seconds, like a Motion lineup. Stars run from 1 to 8, so you can\'t take everyone at the top.</span></div></li>' +
+    '<li><b class="n">3</b><div><b>Watch the next 24 hours</b><span>race by. At every update #1 earns 1,000 points and lower ranks earn less. Your score is your picks\' average.</span></div></li></ol></div>' +
+    '<p class="note">Based on Motion\'s official rules: five different Creators, a star cap, #1 earns 1,000. Motion scores real social engagement and doesn\'t publish its full formula, so the points here are estimated from rank and the stars from each Creator\'s 14-day average rank.</p>';
   $('rwDaily').onclick = () => rwStart(true);
   $('rwRand').onclick = () => rwStart(false);
 }
-
-/* ---- pick phase ---- */
 function rwTop(extra){
   const dots = RW.rounds.map((_, i) => '<i class="' + (i < RW.i ? 'done' : i === RW.i ? 'now' : '') + '"></i>').join('');
   return '<div class="rw-top"><div class="rw-prog"><b>Round ' + (RW.i + 1) + ' of ' + RW.rounds.length + '</b><span class="rw-dots">' + dots + '</span></div>' +
-    '<div class="rw-sc">Score <b id="rwSc" class="mv ' + cls(RW.total) + '">' + sg(RW.total) + '</b></div>' + (extra || '') + '</div>';
+    '<div class="rw-sc">Score <b id="rwSc" class="sc">' + nf(RW.total) + '</b></div>' + (extra || '') + '</div>';
 }
 function rwPickUI(){
   RW.phase = 'pick';
-  const r = RW.rounds[RW.i], F = simFrame(r.k);
   const clock = RW.relaxed ? '' : '<div class="rw-clock" id="rwClk" role="timer" aria-label="Seconds left"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="23" class="bg"/><circle cx="27" cy="27" r="23" class="fg" pathLength="1"/></svg><span class="num">' + RW_SECS + '</span></div>';
   $('rwBox').innerHTML = rwTop(clock) +
-    '<p class="rw-hint">The board at a hidden past update, with each creator\'s move over the 24 hours before it. Pick ' + RW_PICKS + ' who will climb most in the next 24 hours.</p>' +
-    '<div class="rw-slots" id="rwSlots"></div>' +
-    '<div class="rw-quick"><span class="lbl">Quick</span><button class="btn" data-rq="hot">Hot hand</button><button class="btn" data-rq="cheap">Cheap and rising</button><button class="btn" data-rq="rand">Random 3</button><button class="btn pri go" id="rwGo">Go</button></div>' +
-    '<div class="bar"><div class="grp"><input class="search" id="rwq" type="search" placeholder="Find a creator" aria-label="Find a creator to pick"></div><div class="grp"><span class="lbl">Show</span><div class="seg sm" id="rwf"><button data-f="rank">By rank</button><button data-f="up">Climbing</button><button data-f="cheap">Cheap and rising</button></div></div></div>' +
+    '<p class="rw-hint">The board at a hidden past update, with each Creator\'s stars and move over the 24 hours before. Pick 5 within ' + STAR_CAP + ' stars who will rank highest over the next 24 hours.</p>' +
+    '<div class="slots rw-slots" id="rwSlots"></div><div id="rwStars"></div>' +
+    '<div class="rw-quick"><span class="lbl">Quick</span><button class="btn" data-rq="hot">Hot hand</button><button class="btn" data-rq="cheap">Cheap and rising</button><button class="btn" data-rq="rand">Random 5</button><button class="btn pri go" id="rwGo">Go</button></div>' +
+    '<div class="bar"><div class="grp"><input class="search" id="rwq" type="search" placeholder="Find a creator" aria-label="Find a creator to pick"></div><div class="grp"><span class="lbl">Show</span><div class="seg sm" id="rwf"><button data-f="rank">By rank</button><button data-f="stars">Fewest stars</button><button data-f="up">Climbing</button><button data-f="cheap">Cheap and rising</button></div></div></div>' +
     '<div class="cands" id="rwCands"></div>';
   $('rwq').value = RW.q;
   $('rwq').oninput = e => { RW.q = e.target.value; rwParts(); $('rwCands').scrollTop = 0; };
-  $('rwq').onkeydown = e => { if (e.key === 'Enter'){ const a = $('rwCands').querySelector('[data-radd]:not(.on)'); if (a){ rwToggle(a.dataset.radd); RW.q = ''; $('rwq').value = ''; rwParts(); } } };
+  $('rwq').onkeydown = e => { if (e.key === 'Enter'){ const a = $('rwCands').querySelector('[data-radd]:not(.on):not(.off)'); if (a){ rwToggle(a.dataset.radd); RW.q = ''; $('rwq').value = ''; rwParts(); } } };
   document.querySelectorAll('#rwf button').forEach(b => b.onclick = () => { RW.f = b.dataset.f; rwParts(); $('rwCands').scrollTop = 0; });
   $('rwGo').onclick = () => rwGo(false);
   rwParts();
@@ -1699,47 +1759,34 @@ function rwPickUI(){
 }
 function rwParts(){
   const r = RW.rounds[RW.i], F = simFrame(r.k), byId = new Map(F.rows.map(x => [x.id, x])), n = r.picks.length;
-  let html = '';
-  for (let i = 0; i < RW_PICKS; i++){
-    const id = r.picks[i], x = id && byId.get(id);
-    if (!x){ html += '<div class="slot none"><span class="plus" aria-hidden="true">+</span><span>' + (i === n ? 'Pick a creator' : 'Empty') + '</span></div>'; continue; }
-    const cap = id === r.cap;
-    html += '<div class="slot' + (cap ? ' cap' : '') + (RW.fresh === id ? ' fresh' : '') + '" data-rcap="' + id + '" title="Tap to make captain"><button class="sx" data-rrm="' + id + '" aria-label="Remove ' + esc(x.name) + '">×</button>' + avatar(x.name, 42, x.chw) +
-      '<div class="nm">' + esc(x.name) + '</div><div class="sub">#' + x.rank + ', ' + (x.chw ? '<span class="mv ' + cls(x.chw) + '">' + fmt(x.chw) + '</span> in 24h' : 'no move') + '</div>' +
-      '<button class="capb" data-rcap="' + id + '" aria-pressed="' + cap + '">' + (cap ? '★ Captain ×2' : 'Make captain') + '</button></div>';
-  }
+  let html = ''; for (let i = 0; i < SIM_PICKS; i++) html += slotHtml(byId.get(r.picks[i]), i, n, RW.fresh, 'data-rrm', '');
   RW.fresh = null;
   $('rwSlots').innerHTML = html;
-  $('rwGo').textContent = n ? 'Go' : 'Go with random picks';
+  $('rwStars').innerHTML = starMeter(starSum(F, r.picks));
+  $('rwGo').textContent = n === SIM_PICKS ? 'Go' : n ? 'Go, fill the rest at random' : 'Go with random picks';
   document.querySelectorAll('#rwf button').forEach(b => b.classList.toggle('on', b.dataset.f === RW.f));
-  const v = RW.q.trim().toLowerCase();
-  let list = F.rows.filter(x => !v || x.name.toLowerCase().includes(v));
-  if (RW.f === 'up') list = list.filter(x => x.chw > 0).sort((a, b) => b.chw - a.chw);
-  else if (RW.f === 'cheap') list = list.filter(x => x.cheap && x.chw >= 2).sort((a, b) => b.chw - a.chw || b.heat - a.heat);
-  else list.sort((a, b) => a.rank - b.rank);
-  const full = n >= RW_PICKS, foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.radd : null;
-  $('rwCands').innerHTML = list.length ? list.map(x => { const on = r.picks.includes(x.id);
-    return '<div class="cand' + (on ? ' on' : full ? ' off' : '') + '" role="button" tabindex="0" data-radd="' + x.id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove ' : 'Pick ') + esc(x.name) + ', rank ' + x.rank + '"><span class="rk">#' + x.rank + '</span>' + avatar(x.name, 28, x.chw) +
-      '<span class="nm">' + esc(x.name) + badge(x) + (x.cheap && x.chw >= 2 ? ' <span class="tag">Cheap and rising</span>' : '') + '</span>' + spark(x.seg.filter(q => q.t >= F.tNow - 72 * H), F.N) +
-      '<span class="mv ' + cls(x.chw) + '">' + (x.chw ? fmt(x.chw) : '·') + '</span><span class="add" aria-hidden="true">' + (on ? '✓' : '+') + '</span></div>'; }).join('')
-    : '<p class="empty">' + (v ? 'No creator matches that name.' : 'Nobody fits at this update.') + '</p>';
+  const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.radd : null;
+  $('rwCands').innerHTML = candRows(F, r.picks, RW.q, RW.f, 'data-radd');
   if (foc){ const e = $('rwCands').querySelector('[data-radd="' + foc + '"]'); if (e) e.focus({preventScroll: true}); }
 }
 function rwToggle(id){
-  const r = RW.rounds[RW.i], i = r.picks.indexOf(id);
-  if (i >= 0){ r.picks.splice(i, 1); if (r.cap === id) r.cap = r.picks[0] || null; }
-  else { if (r.picks.length >= RW_PICKS){ toast('Pick ' + RW_PICKS + ' per round. Remove one first.'); return; } r.picks.push(id); RW.fresh = id; if (!r.cap) r.cap = id; }
+  const r = RW.rounds[RW.i], F = simFrame(r.k), i = r.picks.indexOf(id);
+  if (i >= 0) r.picks.splice(i, 1);
+  else {
+    if (r.picks.length >= SIM_PICKS){ toast('Pick ' + SIM_PICKS + '. Remove one first.'); return; }
+    if (starSum(F, r.picks) + (F.stars.get(id) || 0) > STAR_CAP){ toast('That would go over the ' + STAR_CAP + '-star cap'); return; }
+    r.picks.push(id); RW.fresh = id;
+  }
   rwParts();
 }
 function rwQuick(kind){
-  const r = RW.rounds[RW.i], ids = quickIds(simFrame(r.k), RW_PICKS, kind);
-  if (!ids.length){ toast('Nobody is ' + (kind === 'cheap' ? 'cheap and rising' : 'climbing') + ' at this update'); return; }
-  r.picks = ids; r.cap = ids[0]; RW.fresh = ids[0]; rwParts();
+  const r = RW.rounds[RW.i], F = simFrame(r.k);
+  r.picks = capFill(F, quickList(F, kind), []); RW.fresh = r.picks[0]; rwParts();
 }
 function rwStartClock(){
   clearInterval(RW.tid);
   if (RW.relaxed) return;
-  RW.deadline = Date.now() + RW_SECS * 1000;
+  if (RW.clockFor !== RW.i){ RW.clockFor = RW.i; RW.deadline = Date.now() + RW_SECS * 1000; }
   RW.tid = setInterval(rwClock, 200); rwClock();
 }
 function rwClock(){
@@ -1754,58 +1801,56 @@ function rwClock(){
 function rwGo(timeUp){
   if (!RW || RW.phase !== 'pick') return;
   clearInterval(RW.tid);
-  const r = RW.rounds[RW.i], F = simFrame(r.k);
-  if (!r.picks.length){ r.picks = quickIds(F, RW_PICKS, 'rand'); r.cap = r.picks[0]; toast(timeUp ? 'Time\'s up. Random picks played for you.' : 'Random picks played for you'); }
+  const r = RW.rounds[RW.i], F = simFrame(r.k), n0 = r.picks.length;
+  if (n0 < SIM_PICKS){ r.picks = capFill(F, quickList(F, 'rand'), r.picks); toast((timeUp ? 'Time\'s up. ' : '') + (n0 ? 'Empty slots filled at random' : 'Random picks played for you')); }
   else if (timeUp) toast('Time\'s up');
-  for (const id of r.picks) r.names[id] = F.names[id];
   // score the round now; the race only shows it
-  const R = simRanks(), s0 = R[r.k], s1 = R[r.e], w = id => id === r.cap ? 2 : 1;
-  r.per = r.picks.map(id => ({id, r0: s0.m.get(id), r1: rankAt(s1, id), gone: !s1.m.has(id)}));
-  r.per.forEach(p => p.pts = w(p.id) * (p.r0 - p.r1));
-  r.pts = r.per.reduce((a, p) => a + p.pts, 0);
-  r.c = [...s0.m.entries()].map(([id, r0]) => ({id, d: r0 - rankAt(s1, id)}));
-  const top = r.c.slice().sort((a, b) => b.d - a.d);
-  r.best = top.slice(0, RW_PICKS).reduce((a, x) => a + x.d, 0) + top[0].d;
-  r.bestIds = top.slice(0, RW_PICKS).map(x => x.id);
-  r.mover = top[0];
-  for (const x of top.slice(0, RW_PICKS)) r.names[x.id] = F.names[x.id];
+  const items = [...simRanks()[r.k].m.keys()].map(id => ({id, v: winPts(r.k, r.e, id), st: F.stars.get(id) || 1}));
+  const byV = new Map(items.map(x => [x.id, x.v]));
+  r.per = r.picks.map(id => ({id, v: byV.get(id) || 0, st: F.stars.get(id)}));
+  r.pts = r.per.reduce((a, p) => a + p.v, 0);
+  r.items = items;
+  r.best = bestPick(items, SIM_PICKS);
+  r.value = items.slice().sort((a, b) => b.v / b.st - a.v / a.st)[0];
+  for (const id of r.picks.concat(r.best.ids, [r.value.id])) r.names[id] = F.names[id];
   RW.phase = 'race';
   rwRaceUI(false);
 }
-
-/* ---- the race: 24 hours in about 9 seconds ---- */
+/* the race: estimated points at each update over the next 24 hours, in about 9 seconds */
 function rwRaceUI(done){
-  const r = RW.rounds[RW.i], R = simRanks(), fr = R.slice(r.k, r.e + 1), t0 = fr[0].t, T = Math.max(fr[fr.length - 1].t - t0, 1);
-  const P = r.per.map((p, i) => ({...p, i, name: r.names[p.id], cap: p.id === r.cap, col: SERIES[i], rs: fr.map(s => rankAt(s, p.id))}));
-  // the race is drawn as places moved since the pick, so every line starts together at 0
-  const all = P.flatMap(p => p.rs.map(v => p.r0 - v)); let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
-  const pad = Math.max(1.5, (hi - lo) * .12); lo -= pad; hi += pad; if (hi - lo < 10){ const c = (hi + lo) / 2; hi = c + 5; lo = c - 5; }
-  const W = 900, HH = 380, m = {l: 58, r: 34, t: 28, b: 42}, iw = W - m.l - m.r, ih = HH - m.t - m.b;
+  const r = RW.rounds[RW.i], R = simRanks(), fr = R.slice(r.k, r.e + 1), t0 = fr[0].t, T = Math.max(fr[fr.length - 1].t - t0, 1), F = simFrame(r.k);
+  const P = r.per.map((p, i) => ({...p, i, name: r.names[p.id], col: SERIES[i % 4], c5: i === 4, r0: rankAt(fr[0], p.id), rs: fr.map(s => rankAt(s, p.id)), pv: fr.map(s => ptsAt(s, p.id))}));
+  const COLS = ['#0aa5c2', '#ff3877', '#c98500', '#9085e9', '#3fd68f']; P.forEach((p, i) => p.col = COLS[i]);
+  const all = P.flatMap(p => p.pv); let lo = Math.min(...all), hi = Math.max(...all);
+  const pad = Math.max(30, (hi - lo) * .12); lo = Math.max(0, lo - pad); hi = Math.min(1000, hi + pad); if (hi - lo < 200){ const c = (hi + lo) / 2; lo = Math.max(0, c - 100); hi = Math.min(1000, lo + 200); }
+  const W = 900, HH = 380, m = {l: 62, r: 34, t: 28, b: 42}, iw = W - m.l - m.r, ih = HH - m.t - m.b;
   const X = t => m.l + (t - t0) / T * iw, Y = v => m.t + (hi - v) / (hi - lo) * ih;
   let g = '';
   const ys = niceStep(hi - lo, 5);
-  for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys){ g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="' + (v ? '#151d45' : '#3a4577') + '"' + (v ? '' : ' stroke-width="1.5"') + '/><text x="' + (m.l - 10) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end" fill="#5d6a8c" font-size="13">' + sg(v) + '</text>'; }
-  g += '<text x="' + (m.l + 8) + '" y="' + (m.t + 14) + '" fill="#3fd68f" font-size="12" font-weight="700">Climbing</text><text x="' + (m.l + 8) + '" y="' + (HH - m.b - 8) + '" fill="#ff7849" font-size="12" font-weight="700">Falling</text>';
+  for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys) g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="#151d45"/><text x="' + (m.l - 10) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end" fill="#5d6a8c" font-size="13">' + nf(v) + '</text>';
   for (let h = 0; h <= 24; h += 4){ const x = X(t0 + h * H); g += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + m.t + '" y2="' + (HH - m.b) + '" stroke="#121a3d"/><text x="' + x.toFixed(1) + '" y="' + (HH - 14) + '" text-anchor="middle" fill="#5d6a8c" font-size="13">+' + h + 'h</text>'; }
-  const lines = P.map(p => '<polyline points="' + fr.map((s, j) => X(s.t).toFixed(1) + ',' + Y(p.r0 - p.rs[j]).toFixed(1)).join(' ') + '" fill="none" stroke="' + p.col + '" stroke-width="' + (p.cap ? 4.5 : 3.2) + '" stroke-linejoin="round" stroke-linecap="round" clip-path="url(#rwClip)"' + (p.cap ? ' filter="url(#rwGlow)"' : '') + '/>').join('');
-  const heads = P.map(p => '<g class="rw-head" id="rwH' + p.i + '" transform="translate(' + X(t0).toFixed(1) + ',' + Y(0).toFixed(1) + ')">' + (p.cap ? '<circle r="22" fill="none" stroke="' + PINK + '" stroke-width="2.5" class="capring"/>' : '') + '<circle r="17" fill="' + p.col + '" stroke="#0b1029" stroke-width="3"/><text y="5" text-anchor="middle" font-size="12" font-weight="800" fill="#050812">' + esc(initials(p.name)) + '</text></g>').join('');
-  const side = P.map(p => '<div class="rr"><i style="background:' + p.col + '"></i><span class="nm">' + esc(p.name) + (p.cap ? ' <span class="tag">×2</span>' : '') + '<small id="rwR' + p.i + '">#' + p.r0 + '</small></span><b class="pts mv flat" id="rwP' + p.i + '">0</b></div>').join('');
+  g += '<text x="' + (m.l + 8) + '" y="' + (m.t + 14) + '" fill="#8e9bb8" font-size="12" font-weight="700">Points per update, #1 earns 1,000</text>';
+  const lines = P.map(p => '<polyline points="' + fr.map((s, j) => X(s.t).toFixed(1) + ',' + Y(p.pv[j]).toFixed(1)).join(' ') + '" fill="none" stroke="' + p.col + '" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" clip-path="url(#rwClip)"/>').join('');
+  const heads = P.map(p => '<g class="rw-head" id="rwH' + p.i + '" transform="translate(' + X(t0).toFixed(1) + ',' + Y(p.pv[0]).toFixed(1) + ')"><circle r="16" fill="' + p.col + '" stroke="#0b1029" stroke-width="3"/><text y="5" text-anchor="middle" font-size="11" font-weight="800" fill="#050812">' + esc(initials(p.name)) + '</text></g>').join('');
+  const side = P.map(p => '<div class="rr"><i style="background:' + p.col + '"></i><span class="nm">' + esc(p.name) + '<small id="rwR' + p.i + '">#' + p.r0 + ', ★' + p.st + '</small></span><b class="pts sc" id="rwP' + p.i + '">0</b></div>').join('');
   $('rwBox').innerHTML = rwTop('<div class="rw-time" id="rwT">' + (done ? '+24h' : '+0h') + '</div>') +
-    '<div class="race"><svg viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Places your picks moved over the next 24 hours"><defs><clipPath id="rwClip"><rect id="rwClipR" x="0" y="0" width="' + m.l + '" height="' + HH + '"/></clipPath><filter id="rwGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' + g + lines + heads + '</svg>' +
-    '<div class="race-side"><p class="sub">Your picks</p>' + side + '<button class="btn sm skip" id="rwSkip"' + (done ? ' hidden' : '') + '>Skip</button></div></div><div id="rwRes"></div>';
+    '<div class="race"><svg viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Estimated points of your picks at each update over the next 24 hours"><defs><clipPath id="rwClip"><rect id="rwClipR" x="0" y="0" width="' + m.l + '" height="' + HH + '"/></clipPath></defs>' + g + lines + heads + '</svg>' +
+    '<div class="race-side"><p class="sub">Your picks, average points so far</p>' + side + '<button class="btn sm skip" id="rwSkip"' + (done ? ' hidden' : '') + '>Skip</button></div></div><div id="rwRes"></div>';
   const paint = p => {
     const tt = t0 + p * T; let tot = 0;
+    let jn = 0; while (jn < fr.length - 1 && fr[jn + 1].t <= tt + 1) jn++;   // updates already in
     $('rwClipR').setAttribute('width', (X(tt) + 2).toFixed(1));
     P.forEach(q => {
       let j = 0; while (j < fr.length - 2 && fr[j + 1].t < tt) j++;
       const a = fr[j], b = fr[Math.min(j + 1, fr.length - 1)], f = b.t > a.t ? Math.min(1, Math.max(0, (tt - a.t) / (b.t - a.t))) : 1;
-      const rv = q.rs[j] + (q.rs[Math.min(j + 1, fr.length - 1)] - q.rs[j]) * f, pts = Math.round((q.r0 - rv) * (q.cap ? 2 : 1));
-      tot += pts;
-      $('rwH' + q.i).setAttribute('transform', 'translate(' + X(tt).toFixed(1) + ',' + Y(q.r0 - rv).toFixed(1) + ')');
-      const pe = $('rwP' + q.i); pe.textContent = sg(pts); pe.className = 'pts mv ' + cls(pts);
-      $('rwR' + q.i).textContent = '#' + q.r0 + ' → ' + (p >= 1 && q.gone ? 'off the board' : '#' + Math.round(rv));
+      const pvv = q.pv[j] + (q.pv[Math.min(j + 1, fr.length - 1)] - q.pv[j]) * f, rv = q.rs[j] + (q.rs[Math.min(j + 1, fr.length - 1)] - q.rs[j]) * f;
+      let avg = 0; if (jn){ for (let k = 1; k <= jn; k++) avg += q.pv[k]; avg /= jn; }
+      tot += avg;
+      $('rwH' + q.i).setAttribute('transform', 'translate(' + X(tt).toFixed(1) + ',' + Y(pvv).toFixed(1) + ')');
+      $('rwP' + q.i).textContent = nf(avg);
+      $('rwR' + q.i).textContent = '#' + q.r0 + ' → ' + (p >= 1 && rv > fr[fr.length - 1].N ? 'off the board' : '#' + Math.round(rv)) + ', ★' + q.st;
     });
-    $('rwSc').textContent = sg(RW.total + tot); $('rwSc').className = 'mv ' + cls(RW.total + tot);
+    $('rwSc').textContent = nf(RW.total + tot);
     $('rwT').textContent = '+' + Math.min(24, Math.floor(p * 24)) + 'h';
   };
   if (done || RM.matches){ paint(1); return rwResult(done); }
@@ -1814,7 +1859,7 @@ function rwRaceUI(done){
   const step = now => {
     if (!RW || RW.phase !== 'race' || !$('rwClipR')) return;
     let p = RW.skip ? 1 : Math.min(1, (now - start) / RW_RACE);
-    p = p < 1 ? .5 - Math.cos(p * Math.PI) / 2 : 1;   // ease in and out
+    p = p < 1 ? .5 - Math.cos(p * Math.PI) / 2 : 1;
     paint(p);
     if (p < 1) requestAnimationFrame(step); else setTimeout(() => rwResult(false), 350);
   };
@@ -1822,63 +1867,58 @@ function rwRaceUI(done){
 }
 function rwResult(again){
   const r = RW.rounds[RW.i], R = simRanks(), t0 = R[r.k].t, t1 = R[r.e].t;
-  if (!again){ RW.total += r.pts; }
+  if (!again) RW.total += r.pts;
   RW.phase = 'result';
   if ($('rwSkip')) $('rwSkip').hidden = true;
-  $('rwSc').textContent = sg(RW.total); $('rwSc').className = 'mv ' + cls(RW.total);
-  const last = RW.i === RW.rounds.length - 1, hit = r.picks.includes(r.mover.id);
+  $('rwSc').textContent = nf(RW.total);
+  const last = RW.i === RW.rounds.length - 1, F = simFrame(r.k);
   $('rwRes').innerHTML = '<div class="rw-res fade-in"><p class="rw-reveal">This was <b>' + dayf(t0) + ', ' + hhmm(t0) + '</b> to <b>' + dayf(t1) + ', ' + hhmm(t1) + '</b>.</p>' +
-    '<div class="rw-res-g"><div><small>Round points</small><b id="rwRp" class="mv ' + cls(r.pts) + '">0</b></div><div><small>Best possible</small><b>' + sg(r.best) + '</b><span>' + r.bestIds.map(id => esc(r.names[id])).join(', ') + '</span></div>' +
-    '<div><small>Biggest climber</small><b class="mv up">' + fmt(r.mover.d) + '</b><span>' + esc(r.names[r.mover.id]) + (hit ? ', and you had them' : '') + '</span></div></div>' +
+    '<div class="rw-res-g"><div><small>Round points</small><b id="rwRp" class="sc">0</b><span>' + Math.round(r.pts / r.best.v * 100) + '% of the best possible</span></div>' +
+    '<div><small>Best possible lineup</small><b>' + nf(r.best.v) + '</b><span>' + r.best.ids.map(id => esc(r.names[id]) + ' ★' + F.stars.get(id)).join(', ') + '</span></div>' +
+    '<div><small>Best value pick</small><b>' + nf(r.value.v) + '</b><span>' + esc(r.names[r.value.id]) + ', only ★' + r.value.st + (r.picks.includes(r.value.id) ? ', and you had them' : '') + '</span></div></div>' +
     '<div class="rw-next"><span class="sub">' + (last ? 'That was the last round.' : (RW.rounds.length - RW.i - 1) + ' to go.') + '</span><button class="btn pri big" id="rwNext">' + (last ? 'See final score' : 'Next round') + '</button></div></div>';
   countUp($('rwRp'), r.pts, 700);
   $('rwNext').onclick = () => { if (last) rwFinal(true); else { RW.i++; RW.q = ''; rwPickUI(); $('rwp').scrollIntoView({behavior: RM.matches ? 'auto' : 'smooth', block: 'start'}); } };
   $('rwNext').focus({preventScroll: true});
 }
-
-/* ---- final score ---- */
+/* random players draft valid lineups too: 5 different Creators within the star cap */
 function rwTotals(){
   if (RW.totals) return RW.totals;
-  const rnd = mulberry(RW.seed ^ 0x9e3779b9), T = SIM_RUNS, out = new Array(T).fill(0);
-  for (const r of RW.rounds){
-    const c = r.c.map(x => x.d), idx = c.map((_, i) => i), m = Math.min(RW_PICKS, c.length);
-    for (let t = 0; t < T; t++){
-      let s = 0;
-      for (let j = 0; j < m; j++){ const q = j + Math.floor(rnd() * (idx.length - j)); const x = idx[j]; idx[j] = idx[q]; idx[q] = x; s += c[idx[j]]; }
-      out[t] += s + c[idx[Math.floor(rnd() * m)]];
-    }
-  }
+  const rnd = mulberry(RW.seed ^ 0x9e3779b9), out = new Float64Array(SIM_RUNS);
+  for (const r of RW.rounds){ const s = randScores(r.items, SIM_PICKS, rnd, SIM_RUNS); for (let t = 0; t < SIM_RUNS; t++) out[t] += s[t]; }
   return RW.totals = out;
 }
 function histSvg(totals, you){
   const W = 560, HH = 170, m = {l: 10, r: 10, t: 34, b: 28}, iw = W - m.l - m.r, ih = HH - m.t - m.b;
-  let lo = Math.min(...totals, you), hi = Math.max(...totals, you); if (hi - lo < 10){ hi += 5; lo -= 5; }
+  let lo = Math.min(...totals, you), hi = Math.max(...totals, you); if (hi - lo < 100){ hi += 50; lo -= 50; }
   const nb = 34, bw = (hi - lo) / nb, bins = new Array(nb).fill(0);
   for (const v of totals) bins[Math.min(nb - 1, Math.floor((v - lo) / bw))]++;
   const mx = Math.max(...bins), X = v => m.l + (v - lo) / (hi - lo) * iw, yx = X(you);
   const bars = bins.map((b, i) => { const h = b / mx * ih, x = m.l + i * iw / nb, mid = lo + (i + .5) * bw; return '<rect x="' + (x + 1).toFixed(1) + '" y="' + (m.t + ih - h).toFixed(1) + '" width="' + (iw / nb - 2).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2" fill="' + (mid <= you ? '#2f6f86' : '#232d5c') + '" style="transition-delay:' + (i * 18) + 'ms"/>'; }).join('');
-  return '<svg class="hist pre" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Your score against 5,000 random players">' + bars +
+  return '<svg class="hist pre" viewBox="0 0 ' + W + ' ' + HH + '" role="img" aria-label="Your score against 5,000 random lineups">' + bars +
     '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + (m.t + ih + .5) + '" y2="' + (m.t + ih + .5) + '" stroke="#3a4577"/>' +
-    '<text x="' + m.l + '" y="' + (HH - 8) + '" fill="#5d6a8c" font-size="12">' + sg(Math.round(lo)) + '</text><text x="' + (W - m.r) + '" y="' + (HH - 8) + '" text-anchor="end" fill="#5d6a8c" font-size="12">' + sg(Math.round(hi)) + '</text>' +
+    '<text x="' + m.l + '" y="' + (HH - 8) + '" fill="#5d6a8c" font-size="12">' + nf(lo) + '</text><text x="' + (W - m.r) + '" y="' + (HH - 8) + '" text-anchor="end" fill="#5d6a8c" font-size="12">' + nf(hi) + '</text>' +
     '<g class="you" style="--x:' + yx.toFixed(1) + 'px"><line x1="0" x2="0" y1="' + (m.t - 4) + '" y2="' + (m.t + ih) + '" stroke="' + PINK + '" stroke-width="3" stroke-linecap="round"/><rect x="-22" y="' + (m.t - 30) + '" width="44" height="22" rx="11" fill="' + PINK + '"/><text y="' + (m.t - 14) + '" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">You</text></g></svg>';
 }
 function rwFinal(fresh){
   RW.phase = 'final';
   const T = rwTotals(), you = RW.total;
-  let below = 0; for (const v of T) if (v < you) below++; else if (v === you) below += .5;
-  RW.pct = Math.round(below / T.length * 100);
-  if (RW.daily && fresh && !RWDAY[RW.date]){ RWDAY[RW.date] = {score: you, pct: RW.pct}; try { localStorage.setItem('mr-rewind', JSON.stringify(RWDAY)); } catch(e) {} RW.saved = true; }
-  const R = simRanks(), amax = Math.max(1, ...RW.rounds.map(r => Math.abs(r.pts)));
-  const rows = RW.rounds.map((r, i) => { const w = Math.abs(r.pts) / amax * 50, t0 = R[r.k].t;
-    return '<div class="row"><span class="rl">Round ' + (i + 1) + '<small>' + dayf(t0) + ', ' + hhmm(t0) + '</small></span><span class="rp">' + r.picks.map(id => esc(r.names[id]) + (id === r.cap ? ' ★' : '')).join(', ') + '</span>' +
-      '<span class="rw-bar"><i class="' + (r.pts >= 0 ? 'pos' : 'neg') + '" style="--w:' + w.toFixed(1) + '%;transition-delay:' + (300 + i * 120) + 'ms"></i></span><b class="mv ' + cls(r.pts) + '">' + sg(r.pts) + '</b></div>'; }).join('');
-  const verdict = RW.pct >= 90 ? 'Elite scout' : RW.pct >= 70 ? 'Sharp eye' : RW.pct >= 40 ? 'In the pack' : 'Back to the radar';
+  RW.pct = pctOf(T, you);
+  RW.bestTotal = RW.rounds.reduce((a, r) => a + r.best.v, 0);
+  RW.ofBest = Math.round(you / RW.bestTotal * 100);
+  if (RW.daily && fresh && !RWDAY[RW.date]){ RWDAY[RW.date] = {score: Math.round(you), pct: RW.pct, ofBest: RW.ofBest}; try { localStorage.setItem('mr-rewind2', JSON.stringify(RWDAY)); } catch(e) {} RW.saved = true; }
+  const R = simRanks(), amax = Math.max(1, ...RW.rounds.map(r => r.best.v));
+  const rows = RW.rounds.map((r, i) => { const w = r.pts / amax * 100, wb = r.best.v / amax * 100, t0 = R[r.k].t;
+    return '<div class="row"><span class="rl">Round ' + (i + 1) + '<small>' + dayf(t0) + ', ' + hhmm(t0) + '</small></span><span class="rp">' + r.picks.map(id => esc(r.names[id])).join(', ') + '</span>' +
+      '<span class="rw-bar" title="Your points against the best possible"><em style="width:' + wb.toFixed(1) + '%"></em><i style="--w:' + w.toFixed(1) + '%;transition-delay:' + (300 + i * 120) + 'ms"></i></span><b class="sc">' + nf(r.pts) + '</b></div>'; }).join('');
+  // rated against the best lineup in hindsight; random lineups are easy to beat when stars cap the top
+  const verdict = RW.ofBest >= 90 ? 'Elite scout' : RW.ofBest >= 80 ? 'Sharp eye' : RW.ofBest >= 65 ? 'In the pack' : 'Back to the radar';
   $('rwBox').innerHTML = '<div class="rw-final"><div class="rw-fl"><p class="hand pink rw-kick">' + (RW.daily ? 'Today\'s challenge' : 'Random game') + ', ' + verdict + '</p>' +
-    '<div class="rw-big"><b id="rwFs" class="mv ' + cls(you) + '">0</b><span>points in ' + RW.rounds.length + ' rounds</span></div>' +
-    '<p class="rw-pct">Better than <b>' + RW.pct + '%</b> of 5,000 random players</p>' + histSvg(T, you) +
+    '<div class="rw-big"><b id="rwFs" class="sc">0</b><span>points in ' + RW.rounds.length + ' rounds</span></div>' +
+    '<p class="rw-pct"><b>' + RW.ofBest + '%</b> of the best possible, better than ' + RW.pct + '% of 5,000 random lineups</p>' + histSvg(T, you) +
     '<div class="rw-cta"><button class="btn pri big" id="rwShare">Save image</button><button class="btn big" id="rwAgain">Random game</button><button class="btn big" id="rwHome">Back to start</button></div>' +
     (RW.daily ? '<p class="rw-today">' + (RW.saved ? 'Today\'s score is saved. New rounds tomorrow.' : 'This replay doesn\'t change today\'s saved score.') + '</p>' : '') + '</div>' +
-    '<div class="rw-rows"><p class="sub">Round by round, with the dates revealed</p>' + rows + '</div></div><div class="burst" id="rwBurst" aria-hidden="true"></div>';
+    '<div class="rw-rows"><p class="sub">Round by round, with the dates revealed. The faint bar is the best possible.</p>' + rows + '</div></div><div class="burst" id="rwBurst" aria-hidden="true"></div>';
   countUp($('rwFs'), you, 1200);
   requestAnimationFrame(() => requestAnimationFrame(() => { const h = document.querySelector('.hist'); if (h) h.classList.remove('pre'); document.querySelectorAll('.rw-bar i').forEach(e => e.classList.add('go')); }));
   if (fresh && RW.pct >= 80 && !RM.matches){
@@ -1892,50 +1932,44 @@ function rwFinal(fresh){
 }
 function rewindCard(){
   const [c, g] = cardBase(), R = simRanks(), T = rwTotals(), you = RW.total;
-  cardHead(g, 'Motion Rewind', (RW.daily ? "today's challenge, " : 'random game, ') + RW.rounds.length + ' rounds of picking who climbs next', DATA.tNow);
+  cardHead(g, 'Motion Rewind', (RW.daily ? "today's challenge, " : 'random game, ') + RW.rounds.length + ' rounds of drafting the Motion way', DATA.tNow);
   const P = {x: PAD, y: 246, w: 600, h: 568};
   cardPanel(g, P.x, P.y, P.w, P.h);
-  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  fnt(g, 600, 18); g.fillStyle = FOG; g.fillText('Final score', P.x + 36, P.y + 54);
-  fnt(g, 850, 136, null, 'semi-expanded'); g.fillStyle = mvCol(you); const st = sg(you); g.fillText(st, P.x + 30, P.y + 178);
-  const sw = g.measureText(st).width; fnt(g, 700, 36, 'Caveat, cursive'); g.fillStyle = TXT; g.fillText('points', P.x + 46 + sw, P.y + 176);
-  fnt(g, 700, 24); g.fillStyle = TXT; g.fillText('Better than ' + RW.pct + '% of random players', P.x + 36, P.y + 236);
-  // the spread of 5,000 random players, with you marked
-  const m = {l: P.x + 36, r: P.x + P.w - 36, t: P.y + 300, b: P.y + P.h - 60}, iw = m.r - m.l, ih = m.b - m.t;
-  let lo = Math.min(...T, you), hi = Math.max(...T, you); if (hi - lo < 10){ hi += 5; lo -= 5; }
+  cardScoreBlock(g, P, 'Final score', you, 'points');
+  g.textAlign = 'left'; fnt(g, 700, 24); g.fillStyle = TXT; g.fillText(RW.ofBest + '% of the best possible lineups', P.x + 36, P.y + 222); fnt(g, 500, 17); g.fillStyle = FOG; g.fillText('better than ' + RW.pct + '% of 5,000 random lineups', P.x + 36, P.y + 250);
+  const m = {l: P.x + 36, r: P.x + P.w - 36, t: P.y + 296, b: P.y + P.h - 60}, iw = m.r - m.l, ih = m.b - m.t;
+  let lo = Math.min(...T, you), hi = Math.max(...T, you); if (hi - lo < 100){ hi += 50; lo -= 50; }
   const nb = 34, bw = (hi - lo) / nb, bins = new Array(nb).fill(0); for (const v of T) bins[Math.min(nb - 1, Math.floor((v - lo) / bw))]++;
   const mx = Math.max(...bins), X = v => m.l + (v - lo) / (hi - lo) * iw;
   bins.forEach((b, i) => { const h = b / mx * ih, x = m.l + i * iw / nb; rr(g, x + 1.5, m.b - h, iw / nb - 3, h, 3); g.fillStyle = lo + (i + .5) * bw <= you ? '#2f6f86' : '#232d5c'; g.fill(); });
   g.strokeStyle = '#3a4577'; g.lineWidth = 1; g.beginPath(); g.moveTo(m.l, m.b + .5); g.lineTo(m.r, m.b + .5); g.stroke();
   const yx = X(you); g.strokeStyle = PINK; g.lineWidth = 4; g.lineCap = 'round'; g.beginPath(); g.moveTo(yx, m.t - 2); g.lineTo(yx, m.b); g.stroke();
   rr(g, yx - 30, m.t - 36, 60, 28, 14); g.fillStyle = PINK; g.fill(); fnt(g, 800, 15); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('You', yx, m.t - 21);
-  g.textBaseline = 'alphabetic'; fnt(g, 500, 14); g.fillStyle = '#5d6a8c'; g.textAlign = 'left'; g.fillText('5,000 random players', m.l, m.b + 30);
-  // round by round
+  g.textBaseline = 'alphabetic'; fnt(g, 500, 14); g.fillStyle = '#5d6a8c'; g.textAlign = 'left'; g.fillText('5,000 random lineups, same star cap', m.l, m.b + 30);
   const Q = {x: PAD + 624, y: 246, w: CW - PAD - (PAD + 624), h: 568};
   cardPanel(g, Q.x, Q.y, Q.w, Q.h);
   g.textAlign = 'left'; fnt(g, 750, 24, null, 'semi-expanded'); g.fillStyle = TXT; g.fillText('Round by round', Q.x + 32, Q.y + 52);
-  fnt(g, 700, 26, 'Caveat, cursive'); g.fillStyle = PINK; g.fillText('picked blind, dates revealed after', Q.x + 32, Q.y + 84);
-  const rowH = Math.min(90, (Q.h - 120) / RW.rounds.length), amax = Math.max(1, ...RW.rounds.map(r => Math.abs(r.pts)));
+  fnt(g, 700, 26, 'Caveat, cursive'); g.fillStyle = PINK; g.fillText('5 picks, ' + STAR_CAP + '-star cap, dates revealed after', Q.x + 32, Q.y + 84);
+  const rowH = Math.min(90, (Q.h - 120) / RW.rounds.length), amax = Math.max(1, ...RW.rounds.map(r => r.best.v));
   RW.rounds.forEach((r, i) => {
     const y = Q.y + 112 + i * rowH, cy = y + rowH / 2, t0 = R[r.k].t;
     if (i){ g.strokeStyle = '#151d42'; g.lineWidth = 1; g.beginPath(); g.moveTo(Q.x + 32, y + .5); g.lineTo(Q.x + Q.w - 32, y + .5); g.stroke(); }
     g.textAlign = 'left'; fnt(g, 750, 19); g.fillStyle = TXT; g.fillText('Round ' + (i + 1), Q.x + 32, cy - 6);
     fnt(g, 500, 15); g.fillStyle = FOG; g.fillText(uDayS(t0) + ' ' + uHM(t0) + ' UTC', Q.x + 32, cy + 18);
-    fnt(g, 600, 17); g.fillStyle = '#c3cbe0'; g.fillText(fit(g, r.picks.map(id => r.names[id] + (id === r.cap ? ' ★' : '')).join(', '), 330), Q.x + 210, cy + 6);
-    const bx = Q.x + 570, bwid = Q.w - 570 - 120, mid = bx + bwid / 2, w = Math.abs(r.pts) / amax * bwid / 2;
+    fnt(g, 600, 16); g.fillStyle = '#c3cbe0'; g.fillText(fit(g, r.picks.map(id => r.names[id]).join(', '), 340), Q.x + 200, cy + 6);
+    const bx = Q.x + 570, bwid = Q.w - 570 - 140;
     rr(g, bx, cy - 6, bwid, 12, 6); g.fillStyle = '#151d42'; g.fill();
-    if (w > 0){ rr(g, r.pts >= 0 ? mid : mid - w, cy - 6, w, 12, 6); g.fillStyle = mvCol(r.pts); g.fill(); }
-    g.textAlign = 'right'; fnt(g, 850, 28, null, 'semi-expanded'); g.fillStyle = mvCol(r.pts); g.textBaseline = 'middle'; g.fillText(sg(r.pts), Q.x + Q.w - 32, cy + 1); g.textBaseline = 'alphabetic';
+    rr(g, bx, cy - 6, r.best.v / amax * bwid, 12, 6); g.fillStyle = '#232d5c'; g.fill();
+    rr(g, bx, cy - 6, Math.max(6, r.pts / amax * bwid), 12, 6); g.fillStyle = SCORE_COL; g.fill();
+    g.textAlign = 'right'; fnt(g, 850, 26, null, 'semi-expanded'); g.fillStyle = SCORE_COL; g.textBaseline = 'middle'; g.fillText(nf(r.pts), Q.x + Q.w - 32, cy + 1); g.textBaseline = 'alphabetic';
   });
   cardFoot(g);
+  fnt(g, 500, 13); g.fillStyle = '#5d6a8c'; g.textAlign = 'left'; g.fillText('Points estimated from rank (#1 = 1,000); stars from 14-day average rank. Motion\'s own formula isn\'t public.', PAD, CH - 14);
   return c;
 }
 function simMode(m){
   SIMMODE = m; try { localStorage.setItem('mr-simmode', m); } catch(e) {}
-  document.querySelectorAll('#smode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
-  document.querySelectorAll('#smode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  $('rwp').hidden = m !== 'rewind'; $('lup').hidden = m !== 'lineups';
-  if (m === 'rewind') rwRender(); else { draftUI(); lineupsUI(); }
+  renderSim();
 }
 
 /* ---------- routing & events ---------- */
@@ -2084,15 +2118,16 @@ document.querySelectorAll('#sstart button').forEach(b => b.onclick = async () =>
 document.querySelectorAll('#sfilt button').forEach(b => b.onclick = () => { DRAFT.f = b.dataset.f; saveDraft(); draftUI(); $('cands').scrollTop = 0; });
 $('sq').oninput = e => { DRAFT.q = e.target.value; draftUI(); $('cands').scrollTop = 0; };
 $('lock').onclick = lockLineup;
+document.querySelectorAll('#smode button').forEach(b => b.onclick = () => simMode(b.dataset.m));
+$('v-sim').addEventListener('change', e => { const sel = e.target.closest('[data-sboost]'); if (sel){ DRAFT.boost[sel.dataset.sboost] = +sel.value; saveDraft(); } });
 $('v-sim').addEventListener('click', e => {
-  const a = e.target.closest('[data-sadd]'); if (a){ if (!a.classList.contains('off')) simToggle(a.dataset.sadd); else toast('A lineup has up to ' + SIM_MAX + ' creators. Remove one first.'); return; }
+  if (e.target.closest('select')) return;
+  const a = e.target.closest('[data-sadd]'); if (a){ simToggle(a.dataset.sadd); return; }
   const r = e.target.closest('[data-srm]'); if (r){ simToggle(r.dataset.srm); return; }
-  const c = e.target.closest('[data-scap]'); if (c){ DRAFT.cap = c.dataset.scap; saveDraft(); draftUI(); return; }
   const sq = e.target.closest('[data-squick]');
-  if (sq){ const k = startIdx(DRAFT.start), ids = quickIds(simFrame(k), SIM_MAX, sq.dataset.squick); if (!ids.length){ toast('Nobody fits at this update'); return; } DRAFT.picks = ids; DRAFT.cap = ids[0]; DRAFT.fresh = ids[0]; saveDraft(); draftUI(); return; }
-  const ra = e.target.closest('[data-radd]'); if (ra && RW){ if (!ra.classList.contains('off')) rwToggle(ra.dataset.radd); else toast('Pick ' + RW_PICKS + ' per round. Remove one first.'); return; }
+  if (sq){ const F = simFrame(startIdx(DRAFT.start)); DRAFT.picks = capFill(F, quickList(F, sq.dataset.squick), []); DRAFT.boost = {}; DRAFT.fresh = DRAFT.picks[0]; saveDraft(); draftUI(); return; }
+  const ra = e.target.closest('[data-radd]'); if (ra && RW){ rwToggle(ra.dataset.radd); return; }
   const rm = e.target.closest('[data-rrm]'); if (rm && RW){ rwToggle(rm.dataset.rrm); return; }
-  const rc = e.target.closest('[data-rcap]'); if (rc && RW){ RW.rounds[RW.i].cap = rc.dataset.rcap; rwParts(); return; }
   const rq = e.target.closest('[data-rq]'); if (rq && RW){ rwQuick(rq.dataset.rq); return; }
   const sv = e.target.closest('[data-lsave]'); if (sv){ shareImage('lineup', sv.dataset.lsave); return; }
   const d = e.target.closest('[data-ldel]');
@@ -2103,9 +2138,9 @@ $('v-sim').addEventListener('click', e => {
     setTimeout(() => { if (d.isConnected){ delete d.dataset.armed; d.textContent = 'Delete'; d.classList.remove('pri'); } }, 3500);
   }
 });
-document.querySelectorAll('#smode button').forEach(b => b.onclick = () => simMode(b.dataset.m));
-$('rwBox').addEventListener('keydown', e => { const a = e.target.closest('[data-radd]'); if (a && RW && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (!a.classList.contains('off')) rwToggle(a.dataset.radd); } });
-$('cands').addEventListener('keydown', e => { const a = e.target.closest('[data-sadd]'); if (a && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (!a.classList.contains('off')) simToggle(a.dataset.sadd); } });
+const candKeys = (attr, fn) => e => { const a = e.target.closest('[' + attr + ']'); if (a && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fn(a.getAttribute(attr)); } };
+$('rwBox').addEventListener('keydown', candKeys('data-radd', id => RW && rwToggle(id)));
+$('cands').addEventListener('keydown', candKeys('data-sadd', simToggle));
 load();
 </script>
 </body>
